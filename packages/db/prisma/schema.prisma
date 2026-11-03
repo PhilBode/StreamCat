@@ -1,0 +1,212 @@
+generator client {
+  provider = "prisma-client"
+  output   = "./generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model WebSession {
+  id             String   @id
+  userId         String
+  name           String
+  avatar         String?
+  accessToken    String
+  refreshToken   String
+  tokenExpiresAt DateTime
+  expiresAt      DateTime
+
+  @@index([expiresAt])
+}
+
+model GuildConfig {
+  guildId    String  @id
+  logChannel String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  twitchConfigs      TwitchConfig[]
+  twitchRewards      TwitchReward[]
+  twitchAuth         TwitchAuth?
+  songRequests       SongRequestConfig?
+  spotifyConfig      SpotifyConfig?
+  notificationConfig NotificationConfig?
+  overlays           Overlay[]
+  assets             Asset[]
+}
+
+model NotificationConfig {
+  guildId        String  @id
+  liveChannel    String
+  partnerChannel String
+
+  mainStreamNotification    String   @default("Hey @everyone! {Username} is now live!")
+  partnerStreamNotification String   @default("Hey @here! {Username} is now live!")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+}
+
+model TwitchConfig {
+  id         Int     @id @default(autoincrement())
+  guildId    String
+  username   String
+  channelId  String
+  mainStream Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, username])
+  @@index([guildId])
+}
+
+enum TwitchRewardKind {
+  SPOTIFY_SR
+}
+
+model TwitchReward {
+  id          Int             @id @default(autoincrement())
+  guildId     String
+  rewardId    String
+  kind        TwitchRewardKind
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+
+  @@unique([guildId, rewardId])
+  @@index([guildId])
+}
+
+model TwitchAuth {
+  guildId      String  @id
+  userId       String
+  username     String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+}
+
+model SpotifyConfig {
+  guildId      String   @id
+  clientId     String
+  clientSecret String
+  username     String
+  accessToken  String
+  refreshToken String
+  tokenType    String
+  expiresAt    DateTime
+  scope        String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+}
+
+model SongRequestConfig {
+  guildId            String  @id
+  channelId          String? @unique
+  enabled            Boolean @default(true)
+  chatCommandEnabled Boolean @default(true)
+
+  guild GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+}
+
+model TwitchBotAccount {
+  id           Int      @id @default(1)
+  userId       String
+  username     String
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+}
+
+model Overlay {
+  id        String @id @default(cuid())
+  guildId   String
+  name      String @default("Overlay")
+  tokenHash String @unique
+
+  type              OverlayType @default(DYNAMIC)
+  backgroundAssetId String?
+  settings          Json?
+  customHtml        String?     @db.Text
+  customCss         String?     @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  guild           GuildConfig     @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  backgroundAsset Asset?          @relation(fields: [backgroundAssetId], references: [id], onDelete: SetNull)
+  widgets         OverlayWidget[]
+
+  @@index([guildId])
+}
+
+model OverlayWidget {
+  id        String     @id @default(cuid())
+  overlayId String
+  type      WidgetType
+  x         Float
+  y         Float
+  width     Float
+  height    Float
+  zIndex    Int        @default(0)
+  params    Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  overlay Overlay @relation(fields: [overlayId], references: [id], onDelete: Cascade)
+
+  @@index([overlayId])
+}
+
+model Asset {
+  id         String    @id @default(cuid())
+  guildId    String
+  kind       AssetKind
+  storageKey String    @unique
+  fileName   String?
+  mimeType   String?
+  sizeBytes  BigInt?
+
+  createdAt DateTime @default(now())
+
+  guild               GuildConfig @relation(fields: [guildId], references: [guildId], onDelete: Cascade)
+  usedAsBackgroundFor Overlay[]
+
+  @@index([guildId])
+}
+
+enum OverlayType {
+  STATIC
+  DYNAMIC
+}
+
+enum WidgetType {
+  SPOTIFY_NOW_PLAYING
+  TWITCH_CHAT
+  IMAGE
+  VIDEO
+  WINDOW
+}
+
+enum AssetKind {
+  IMAGE
+  VIDEO
+}

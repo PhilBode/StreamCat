@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "bun",
+      "request": "launch",
+      "name": "StreamCat Backend",
+      "program": "src/main.ts",
+      "cwd": "${workspaceFolder}/apps/backend",
+      "runtimeArgs": ["--env-file=../../.env"],
+      "preLaunchTask": "StreamCat: Prepare backend"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "StreamCat Web",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev:web"],
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "outputCapture": "std",
+      "internalConsoleOptions": "openOnSessionStart",
+      "noDebug": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "StreamCat Full App",
+      "configurations": ["StreamCat Backend", "StreamCat Web"],
+      "stopAll": true
+    }
+  ]
+}

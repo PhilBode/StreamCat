@@ -1,0 +1,15 @@
+node_modules/
+.next/
+dist/
+build/
+coverage/
+logs/
+overlay-assets/
+packages/db/prisma/generated/
+packages/db/prisma/migrations/
+packages/core/src/version.generated.json
+bun.lock
+next-env.d.ts
+AGENTS.md
+CLAUDE.md
+.env*

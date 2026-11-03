@@ -1,0 +1,105 @@
+.followed-streamers {
+    margin-top: 48px;
+    padding-top: 40px;
+    border-top: 1px solid var(--color-rule);
+}
+.followed-streamers-heading {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+}
+.followed-streamers-heading::-webkit-details-marker {
+    display: none;
+}
+.followed-streamers-heading::before {
+    content: "›";
+    flex-shrink: 0;
+}
+.followed-streamers[open] > summary::before {
+    transform: rotate(90deg);
+}
+.followed-streamers-description {
+    display: block;
+    margin-top: 8px;
+    font-size: var(--text-sm);
+    font-weight: normal;
+}
+.followed-streamers-content {
+    margin-top: 24px;
+}
+.streamer-refresh {
+    margin-bottom: 24px;
+}
+.streamer-follow-form {
+    display: flex;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 28px;
+}
+.streamer-follow-form > div {
+    flex: 1;
+    max-width: 480px;
+    min-width: 0;
+}
+.streamer-follow-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: var(--text-sm);
+    color: var(--color-ink-2);
+}
+.streamer-follow-form input {
+    width: 100%;
+}
+.streamer-follow-notice {
+    margin-bottom: 24px;
+    font-size: var(--text-sm);
+}
+.followed-streamer-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid var(--color-rule);
+}
+.followed-streamer-list li {
+    display: grid;
+    grid-template-columns: 48px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 16px;
+    padding: 24px 0;
+    border-bottom: 1px solid var(--color-rule);
+}
+.followed-streamer-name {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.followed-streamer-name a {
+    align-self: flex-start;
+}
+.followed-streamer-name a:hover {
+    text-decoration: underline;
+    text-underline-offset: 4px;
+}
+.followed-streamer-name > span {
+    font-size: var(--text-sm);
+}
+.streamer-unfollow {
+    width: 44px;
+    padding: 0;
+    font-size: 24px;
+}
+@media (max-width: 760px) {
+    .streamer-follow-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    .followed-streamer-list .status-pill {
+        grid-column: 2 / -1;
+        justify-self: start;
+    }
+}

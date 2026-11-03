@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.bun-cache/
+
+# Build output
+packages/core/src/version.generated.json
+dist/
+build/
+.next/
+next-env.d.ts
+.vercel/
+out/
+
+# Environment
+.env
+.env.*
+!.env.example
+*.pem
+
+# IDE
+.idea/*
+!.idea/runConfigurations/
+!.idea/runConfigurations/*
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+overlay-assets/
+*.log
+
+# Database
+*.db
+*.sqlite
+prisma/*.db
+
+# Prisma generated
+packages/db/prisma/generated
+
+# Test coverage
+coverage/
+
+# Docker
+docker/volumes/
+
+# TypeScript
+*.tsbuildinfo
+
+# Temporary
+tmp/
+temp/
+
+.opencode

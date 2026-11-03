@@ -1,0 +1,37 @@
+{
+  "name": "@streamcat/backend",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun test tests",
+    "dev": "bun --watch --env-file=../../.env src/main.ts",
+    "debug": "bun --inspect-brk=127.0.0.1:6502 --env-file=../../.env src/main.ts",
+    "start": "bun --env-file=../../.env src/main.ts"
+  },
+  "dependencies": {
+    "@nestjs/common": "^12.3.2",
+    "@nestjs/core": "^12.3.2",
+    "@nestjs/platform-express": "^12.3.2",
+    "@streamcat/interfaces": "workspace:*",
+    "@streamcat/core": "workspace:*",
+    "@streamcat/db": "workspace:*",
+    "@twurple/api": "^8.2.0",
+    "@twurple/auth": "^8.2.0",
+    "@twurple/eventsub-base": "^8.2.0",
+    "@twurple/eventsub-http": "^8.2.0",
+    "@twurple/eventsub-ws": "^8.2.0",
+    "discord.js": "^14.27.0",
+    "reflect-metadata": "^0.2.2",
+    "spotify-uri": "^4.1.0",
+    "spotify-web-api-node": "^5.0.2",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@types/bun": "1.4.4",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "typescript": "^7.0.2"
+  }
+}

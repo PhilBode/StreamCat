@@ -1,0 +1,78 @@
+@font-face {
+    font-family: "Martian Mono";
+    font-style: normal;
+    font-weight: 100 800;
+    font-stretch: 75% 112.5%;
+    font-display: swap;
+    src: url("/fonts/martian-mono.ttf") format("truetype");
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+html,
+body {
+    margin: 0;
+    overflow-x: clip;
+}
+body {
+    background: var(--color-transparent);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+}
+button,
+input,
+select,
+textarea {
+    font: inherit;
+}
+button,
+a {
+    -webkit-tap-highlight-color: var(--color-transparent);
+}
+button:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+a {
+    color: inherit;
+    text-decoration: none;
+}
+[hidden] {
+    display: none !important;
+}
+:focus-visible {
+    outline: 2px solid var(--color-focus);
+    outline-offset: 4px;
+}
+.site-shell :where(h1, h2, h3) {
+    min-width: 0;
+    overflow-wrap: break-word;
+    font-weight: 500;
+    line-height: 1.3;
+}
+.site-shell :where(h1, h2, h3, p) {
+    margin: 0 0 var(--space-3);
+}
+.site-shell h1 {
+    font-size: var(--text-display);
+    letter-spacing: -0.02em;
+}
+.site-shell h2 {
+    font-size: var(--text-section);
+}
+.site-shell h3 {
+    font-size: var(--text-title);
+}
+@media (prefers-reduced-motion: reduce) {
+    .site-shell *,
+    .site-shell *::before,
+    .site-shell *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}

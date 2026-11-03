@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <!-- Before this direct runner: run `bun run dev:prepare` from the project root. -->
+  <configuration default="false" name="StreamCat Backend" type="BunRunConfiguration" factoryName="Bun" nameIsGenerated="false">
+    <option name="program" value="src/main.ts" />
+    <option name="runtimeParameters" value="--env-file=../../.env" />
+    <option name="workingDirectory" value="$PROJECT_DIR$/apps/backend" />
+    <method v="2" />
+  </configuration>
+</component>

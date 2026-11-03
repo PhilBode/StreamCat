@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "StreamCat: Prepare backend",
+      "type": "process",
+      "command": "bun",
+      "args": ["run", "dev:prepare"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

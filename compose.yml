@@ -1,0 +1,147 @@
+services:
+  secrets:
+    build:
+      context: .
+      dockerfile: docker/secrets/Dockerfile
+    network_mode: none
+    environment:
+      AUTH_SECRET: ${AUTH_SECRET:-}
+      EVENTSUB_SECRET: ${EVENTSUB_SECRET:-}
+      DB_PASSWORD: ${DB_PASSWORD:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET:-}
+    volumes:
+      - installation_secrets:/var/lib/streamcat/secrets
+      - pgdata18:/existing-postgres:ro
+      - garage_meta:/existing-garage:ro
+
+  postgres:
+    image: postgres:18.6-alpine
+    environment:
+      POSTGRES_USER: ${DB_USER:-streamcat}
+      POSTGRES_PASSWORD_FILE: /run/streamcat-secrets/password
+      POSTGRES_DB: ${DB_NAME:-streamcat}
+    volumes:
+      - pgdata18:/var/lib/postgresql
+      - type: volume
+        source: installation_secrets
+        target: /run/streamcat-secrets
+        read_only: true
+        volume:
+          subpath: postgres
+    depends_on:
+      secrets:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  garage:
+    build:
+      context: .
+      dockerfile: docker/garage/Dockerfile
+    environment:
+      GARAGE_DEFAULT_BUCKET: overlay-assets
+    volumes:
+      - garage_meta:/var/lib/garage/meta
+      - garage_data:/var/lib/garage/data
+      - type: volume
+        source: installation_secrets
+        target: /run/streamcat-secrets
+        read_only: true
+        volume:
+          subpath: garage
+    depends_on:
+      secrets:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, /garage, status]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      S3_ENDPOINT: http://garage:3900
+    volumes:
+      - type: volume
+        source: installation_secrets
+        target: /run/streamcat-secrets
+        read_only: true
+        volume:
+          subpath: backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      garage:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          CMD,
+          bun,
+          -e,
+          "fetch('http://127.0.0.1:3002/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  web:
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      BACKEND_URL: http://backend:3002
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          CMD,
+          bun,
+          -e,
+          "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  cloudflared:
+    build:
+      context: .
+      dockerfile: docker/cloudflared/Dockerfile
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN:-}
+    depends_on:
+      - web
+    # Empty means Docker's default: no restart. Avoid a restart loop when disabled.
+    restart: "${TUNNEL_TOKEN:+unless-stopped}"
+
+volumes:
+  pgdata18:
+  garage_meta:
+  garage_data:
+  installation_secrets:

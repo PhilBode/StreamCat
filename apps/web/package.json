@@ -1,0 +1,38 @@
+{
+  "name": "@streamcat/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "env -u BUN_INSPECT -u BUN_INSPECT_CONNECT_TO bun --env-file=../../.env --bun next dev --hostname 0.0.0.0",
+    "build": "bun ../../scripts/build-version.ts && env -u BUN_INSPECT -u BUN_INSPECT_CONNECT_TO bun --bun next build",
+    "start": "env -u BUN_INSPECT -u BUN_INSPECT_CONNECT_TO bun --bun next start --hostname 0.0.0.0",
+    "lint": "bun --bun eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test tests"
+  },
+  "dependencies": {
+    "next": "16.4.3",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "@streamcat/interfaces": "workspace:*",
+    "@streamcat/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.4.3",
+    "typescript": "~6.0.3",
+    "@types/bun": "1.4.4"
+  },
+  "packageManager": "bun@1.4.4",
+  "ignoreScripts": [
+    "sharp",
+    "unrs-resolver"
+  ],
+  "trustedDependencies": [
+    "sharp",
+    "unrs-resolver"
+  ]
+}

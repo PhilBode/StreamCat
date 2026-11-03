@@ -1,0 +1,45 @@
+{
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "postinstall": "bun scripts/build-version.ts --if-missing",
+    "dev": "bun run dev:prepare && concurrently --kill-others -n backend,web -c blue,green \"bun run --cwd apps/backend dev\" \"bun run --cwd apps/web dev\"",
+    "dev:backend": "bun run dev:prepare && bun run --cwd apps/backend dev",
+    "dev:web": "bun run --cwd apps/web dev",
+    "dev:tunnel": "docker compose up -d --build --no-deps cloudflared",
+    "debug": "bun run dev:prepare && concurrently --kill-others -n backend,web -c blue,green \"bun run --cwd apps/backend debug\" \"bun run --cwd apps/web dev\"",
+    "build": "bun run --cwd packages/db db:generate && bun run typecheck && bun run --cwd apps/web build",
+    "typecheck": "bun run --cwd apps/backend typecheck && bun run --cwd apps/web typecheck",
+    "start": "concurrently --kill-others -n backend,web -c blue,green \"bun run --cwd apps/backend start\" \"bun run --cwd apps/web start\"",
+    "db:up": "docker compose -f compose.yml -f compose.dev.yml up -d --build postgres --wait && bun run secrets:sync",
+    "db:prepare": "bun run db:up && bun run --cwd packages/db db:generate && bun run --cwd packages/db db:deploy",
+    "db:down": "docker compose -f compose.yml -f compose.dev.yml stop postgres",
+    "db:setup": "bun run db:up && cd packages/db && bun run db:migrate",
+    "db:reset": "bun run db:down && bun run db:up && cd packages/db && bun run db:reset",
+    "test": "bun run --cwd apps/backend test && bun run --cwd apps/web test",
+    "down": "docker compose down",
+    "lint": "eslint apps/backend packages scripts docker && bun run --cwd apps/web lint",
+    "lint:fix": "eslint apps/backend packages scripts docker --fix && bun run --cwd apps/web lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "storage:up": "docker compose -f compose.yml -f compose.dev.yml up -d --build garage --wait && bun run secrets:sync",
+    "dev:prepare": "bun run storage:up && bun run db:prepare",
+    "secrets:sync": "bun scripts/sync-secrets.ts"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "concurrently": "^10.0.6",
+    "eslint": "9.39.5",
+    "prettier": "3.9.10",
+    "typescript-eslint": "8.71.1"
+  },
+  "dependencies": {},
+  "overrides": {
+    "@typescript-eslint/typescript-estree>minimatch": "11.0.4"
+  },
+  "packageManager": "bun@1.4.4"
+}
