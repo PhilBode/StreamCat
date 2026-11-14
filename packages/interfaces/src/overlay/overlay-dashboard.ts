@@ -1,5 +1,6 @@
 import type {WidgetType} from "./overlay"
 import type {SpotifyPlaybackState} from "../spotify/song-details"
+import {WIDGET_DESIGNS, type WidgetDesignId} from "./widget-designs"
 
 // Includes the two Intermission frames that were previously fixed scene elements.
 export const MAX_OVERLAY_WIDGETS = 22
@@ -9,7 +10,7 @@ export const MIN_WIDGET_WIDTH = 120
 export const MIN_WIDGET_HEIGHT = 64
 export const MAX_OVERLAY_GUIDES = 20
 
-export type OverlayTheme = "default" | "autumn" | "winter" | "dark" | "light" | "glass"
+export type OverlayTheme = "default" | "autumn" | "winter"
 export type OverlayScene = "intermission" | "starting_soon" | "stream_ending" | "widgets"
 export type OverlayFont = "tiny5" | "jersey10"
 export type EditorWidgetType = WidgetType
@@ -24,6 +25,7 @@ export type WidgetGeometry = {
 }
 
 export type WidgetAppearance = {
+    design: WidgetDesignId
     color: string
     backgroundColor: string
 }
@@ -66,6 +68,14 @@ export type EditorWidget = WidgetGeometry &
 
 export function withWidgetColors<T extends EditorWidget>(widget: T, colors: Partial<WidgetAppearance>): T {
     return {...widget, params: {...widget.params, ...colors}}
+}
+
+export function withWidgetDesign<T extends EditorWidget>(widget: T, design: WidgetDesignId): T {
+    const preset = WIDGET_DESIGNS[design]
+    return {
+        ...widget,
+        params: {...widget.params, design, color: preset.color, backgroundColor: preset.backgroundColor}
+    }
 }
 
 export function isMediaWidget(widget: EditorWidget): widget is Extract<EditorWidget, {type: "IMAGE" | "VIDEO"}> {

@@ -1,6 +1,7 @@
 import {BadRequestException} from "@nestjs/common"
 import {
     OVERLAY_THEME_COLORS,
+    WIDGET_DESIGNS,
     TWITCH_CHAT_DEFAULTS,
     TWITCH_CHAT_FONTS,
     MAX_OVERLAY_WIDGETS,
@@ -15,7 +16,8 @@ import {
     type OverlayLayout,
     type OverlayTheme,
     type OverlayScene,
-    type OverlayFont
+    type OverlayFont,
+    type WidgetDesignId
 } from "@streamcat/interfaces"
 
 function object(value: unknown): Record<string, unknown> {
@@ -45,6 +47,12 @@ function color(value: unknown): string {
         throw new BadRequestException("Ungültige Widget-Farbe.")
     }
     return value
+}
+
+function widgetDesign(value: unknown, fallback: OverlayTheme): WidgetDesignId {
+    if (value === undefined) return fallback
+    if (typeof value === "string" && Object.hasOwn(WIDGET_DESIGNS, value)) return value as WidgetDesignId
+    throw new BadRequestException("Unbekanntes Widget-Design.")
 }
 
 export function overlayGuides(input: unknown): NonNullable<OverlayLayout["guides"]> {
@@ -116,6 +124,7 @@ export function validateOverlayLayout(input: unknown): OverlayLayout {
     ) {
         throw new BadRequestException("Das Overlay benötigt eine Fläche von 1920 × 1080 und ein gültiges Theme.")
     }
+    const theme = data.theme as OverlayTheme
     const scene = data.scene ?? "widgets"
     if (!["intermission", "starting_soon", "stream_ending", "widgets"].includes(scene as string))
         throw new BadRequestException("Unbekannte Overlay-Szene.")
@@ -155,7 +164,11 @@ export function validateOverlayLayout(input: unknown): OverlayLayout {
         )
             throw new BadRequestException("Ungültiger Audioeingang.")
         const geometry = {id: widget.id, x, y, width, height, zIndex}
-        const appearance = {color: color(params.color), backgroundColor: color(params.backgroundColor)}
+        const appearance = {
+            design: widgetDesign(params.design, theme),
+            color: color(params.color),
+            backgroundColor: color(params.backgroundColor)
+        }
         switch (widget.type) {
             case "WINDOW":
                 if (params.title !== undefined && (typeof params.title !== "string" || params.title.length > 80))
@@ -219,7 +232,7 @@ export function validateOverlayLayout(input: unknown): OverlayLayout {
     return {
         width: OVERLAY_WIDTH,
         height: OVERLAY_HEIGHT,
-        theme: data.theme as OverlayTheme,
+        theme,
         scene: scene as OverlayScene,
         font: font as OverlayFont,
         socials,

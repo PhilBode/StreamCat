@@ -8,11 +8,15 @@ import {
     OVERLAY_HEIGHT,
     MIN_WIDGET_WIDTH,
     MIN_WIDGET_HEIGHT,
+    WIDGET_DESIGNS,
+    widgetDesignOptions,
     withWidgetColors,
+    withWidgetDesign,
     windowWidth,
     windowHeight,
     type EditorWidget,
-    type OverlayAsset
+    type OverlayAsset,
+    type WidgetDesignId
 } from "@streamcat/interfaces"
 import {lockedWindowSize} from "./window/window-resize"
 import {ColorField} from "./color-field"
@@ -70,6 +74,20 @@ export function WidgetSettings({
     return (
         <section className="overlay-settings">
             <h3>{widgetName(widget, assets)} bearbeiten</h3>
+            <label className="overlay-theme-control">
+                Design
+                <select
+                    value={widget.params.design}
+                    onChange={(event) => onChange(withWidgetDesign(widget, event.target.value as WidgetDesignId))}
+                >
+                    {widgetDesignOptions(widget.type).map((id) => (
+                        <option key={id} value={id}>
+                            {WIDGET_DESIGNS[id].label}
+                        </option>
+                    ))}
+                </select>
+            </label>
+            <p className="muted overlay-hint">Das Design gilt nur für dieses Widget.</p>
             {widget.type === "WINDOW" && <WindowSettings widget={widget} onChange={onChange} />}
             <div className="overlay-geometry">
                 {(["x", "y", "width", "height"] as const).map((field) => (

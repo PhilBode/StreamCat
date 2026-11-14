@@ -7,6 +7,7 @@ import {
     type OverlayScene,
     type OverlayTheme
 } from "./overlay-dashboard"
+import {WIDGET_DESIGNS} from "./widget-designs"
 import {windowHeight} from "./window-geometry"
 
 // Keep this order: existing scenes store the chat provider's numeric font index.
@@ -61,12 +62,13 @@ export function twitchChatUrl(
 }
 
 export const OVERLAY_THEME_COLORS: Record<OverlayTheme, {color: string; backgroundColor: string}> = {
-    default: {color: "#ffffff", backgroundColor: "#1b191ca1"},
-    autumn: {color: "#f6aa1c", backgroundColor: "#62170854"},
-    winter: {color: "#d3d2c6", backgroundColor: "#6d6d695e"},
-    dark: {color: "#f2f2f7", backgroundColor: "#171821"},
-    light: {color: "#171821", backgroundColor: "#f2f2f7"},
-    glass: {color: "#ffffff", backgroundColor: "transparent"}
+    default: WIDGET_DESIGNS.default,
+    autumn: WIDGET_DESIGNS.autumn,
+    winter: WIDGET_DESIGNS.winter
+}
+
+function themeWidgetParams(theme: OverlayTheme) {
+    return {design: theme, ...OVERLAY_THEME_COLORS[theme]}
 }
 
 // The caller supplies IDs so the same preset works in the browser and backend.
@@ -88,7 +90,7 @@ export function overlayPreset(
                       width: intermission ? 553 : 480,
                       height: intermission ? 372 : 518,
                       zIndex: 1,
-                      params: {...OVERLAY_THEME_COLORS[theme]}
+                      params: themeWidgetParams(theme)
                   },
                   {
                       id: ids[1],
@@ -98,7 +100,7 @@ export function overlayPreset(
                       width: intermission ? 553 : 672,
                       height: intermission ? 275 : 302,
                       zIndex: 2,
-                      params: {...OVERLAY_THEME_COLORS[theme], spectralizer: true, audioDeviceName: ""}
+                      params: {...themeWidgetParams(theme), spectralizer: true, audioDeviceName: ""}
                   }
               ]
     if (intermission)
@@ -111,7 +113,7 @@ export function overlayPreset(
                 width: 498,
                 height: windowHeight(498),
                 zIndex: 1,
-                params: {...OVERLAY_THEME_COLORS[theme], title: "Webcam", lockContentAspectRatio: true}
+                params: {...themeWidgetParams(theme), title: "Webcam", lockContentAspectRatio: true}
             },
             {
                 id: `${ids[0]}-game`,
@@ -121,7 +123,7 @@ export function overlayPreset(
                 width: 1252,
                 height: windowHeight(1252),
                 zIndex: 1,
-                params: {...OVERLAY_THEME_COLORS[theme], title: "Game", lockContentAspectRatio: true}
+                params: {...themeWidgetParams(theme), title: "Game", lockContentAspectRatio: true}
             }
         )
     return {width: OVERLAY_WIDTH, height: OVERLAY_HEIGHT, theme, scene, font: "tiny5", widgets}

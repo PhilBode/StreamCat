@@ -1,6 +1,7 @@
 /* eslint-disable @next/next/no-img-element -- Authenticated uploads and animated GIFs must use their original media URLs. */
+import type {CSSProperties} from "react"
 import {
-    OVERLAY_THEME_COLORS,
+    WIDGET_DESIGNS,
     twitchChatUrl,
     type OverlayAsset,
     type EditorWidget,
@@ -11,8 +12,6 @@ import {
 import {SpotifyWidget} from "./widgets/spotify/spotify-widget"
 import {StandardScene} from "./scene/standard-scene"
 import {WindowFrame} from "./widgets/window-frame"
-
-export const THEME_COLORS = OVERLAY_THEME_COLORS
 
 export const EMPTY_PLAYBACK: OverlayPlayback = {status: "disconnected", text: "Spotify nicht verbunden", albumUrl: null}
 
@@ -91,6 +90,8 @@ export function OverlayRenderer({
             <StandardScene scene={scene} chat={chat} socials={layout.socials} />
             {layout.widgets.map((widget) => {
                 const media = widget.type === "IMAGE" || widget.type === "VIDEO"
+                const design = WIDGET_DESIGNS[widget.params.design]
+                const designTokens = (design.tokens ?? {}) as CSSProperties
                 const title =
                     widget.type === "WINDOW"
                         ? (widget.params.title ?? "Fenster")
@@ -109,9 +110,11 @@ export function OverlayRenderer({
                 )
                 return (
                     <div
-                        className={`overlay-widget ${media ? "overlay-media-widget" : ""}`}
+                        className={`overlay-widget overlay-design-${widget.params.design} ${media ? "overlay-media-widget" : ""}`}
                         key={widget.id}
+                        data-design={widget.params.design}
                         style={{
+                            ...designTokens,
                             left: widget.x,
                             top: widget.y,
                             width: widget.width,

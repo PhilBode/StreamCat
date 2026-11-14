@@ -2,10 +2,7 @@
 
 import {useState} from "react"
 import {
-    withWidgetColors,
-    isMediaWidget,
     overlayPreset,
-    OVERLAY_THEME_COLORS,
     type OverlayLayout,
     type OverlayScene,
     type OverlayTheme,
@@ -19,13 +16,7 @@ export function SceneSettings({layout, onChange}: {layout: OverlayLayout; onChan
     const [presetConfirm, setPresetConfirm] = useState(false)
 
     function changeTheme(theme: OverlayTheme) {
-        onChange({
-            ...layout,
-            theme,
-            widgets: layout.widgets.map((widget) =>
-                isMediaWidget(widget) ? widget : withWidgetColors(widget, OVERLAY_THEME_COLORS[theme])
-            )
-        })
+        onChange({...layout, theme})
     }
 
     function loadPreset() {
@@ -83,12 +74,11 @@ export function SceneSettings({layout, onChange}: {layout: OverlayLayout; onChan
                     <option value="default">Standard</option>
                     <option value="autumn">Herbst</option>
                     <option value="winter">Winter</option>
-                    <option value="dark">Dunkel</option>
-                    <option value="light">Hell</option>
-                    <option value="glass">Transparent</option>
                 </select>
             </label>
-            <p className="muted overlay-hint">Ein Design setzt die Widget-Farben zurück.</p>
+            <p className="muted overlay-hint">
+                Gilt nur für Hintergrund, Titel und Taskbar. Widget-Designs stellst du pro Widget ein.
+            </p>
             <label className="overlay-theme-control">
                 Schrift für Fenster und Spotify
                 <select

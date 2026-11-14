@@ -11,6 +11,7 @@ import {BotLoggerService, frontendUrl, type ModuleLogger} from "@streamcat/core"
 import {
     overlayPreset,
     OVERLAY_THEME_COLORS,
+    WIDGET_DESIGNS,
     OVERLAY_WIDTH,
     OVERLAY_HEIGHT,
     TWITCH_CHAT_DEFAULTS,
@@ -25,7 +26,8 @@ import {
     type OverlaySnapshot,
     type OverlayTheme,
     type OverlayScene,
-    type EditorWidget
+    type EditorWidget,
+    type WidgetDesignId
 } from "@streamcat/interfaces"
 import {overlayGuides, validateOverlayLayout} from "../settings/overlay-layout"
 import {OverlayPlaybackService} from "./overlay-playback.service"
@@ -147,7 +149,7 @@ export class OverlayService {
         const theme =
             typeof settings?.theme === "string" && Object.hasOwn(OVERLAY_THEME_COLORS, settings.theme)
                 ? (settings.theme as OverlayTheme)
-                : "dark"
+                : "default"
         const scene = ["intermission", "starting_soon", "stream_ending"].includes(settings?.scene as string)
             ? (settings!.scene as OverlayScene)
             : "widgets"
@@ -170,12 +172,12 @@ export class OverlayService {
                 font: settings?.font === "jersey10" ? "jersey10" : "tiny5",
                 socials,
                 guides: overlayGuides(settings?.guides),
-                widgets: overlay.widgets.map((widget) => this.toEditorWidget(widget))
+                widgets: overlay.widgets.map((widget) => this.toEditorWidget(widget, theme))
             }
         }
     }
 
-    private toEditorWidget(widget: OverlayWidgetRecord): EditorWidget {
+    private toEditorWidget(widget: OverlayWidgetRecord, theme: OverlayTheme): EditorWidget {
         const geometry = {
             id: widget.id,
             x: widget.x,
@@ -185,7 +187,12 @@ export class OverlayService {
             zIndex: widget.zIndex
         }
         const storedParams = widget.params as Record<string, unknown> | null
+        const design =
+            typeof storedParams?.design === "string" && Object.hasOwn(WIDGET_DESIGNS, storedParams.design)
+                ? (storedParams.design as WidgetDesignId)
+                : theme
         const appearance = {
+            design,
             color: typeof storedParams?.color === "string" ? storedParams.color : "#ffffff",
             backgroundColor:
                 typeof storedParams?.backgroundColor === "string" ? storedParams.backgroundColor : "#18181b"

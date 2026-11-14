@@ -4,6 +4,7 @@ import Link from "next/link"
 import {useEffect, useState} from "react"
 import {
     MAX_OVERLAY_WIDGETS,
+    WIDGET_DESIGNS,
     isMediaWidget,
     type EditorWidget,
     type EditorWidgetType,
@@ -14,7 +15,7 @@ import {
 } from "@streamcat/interfaces"
 import {ApiError, apiRequest} from "../../lib/api"
 import {OverlayCanvas, type OverlaySelection} from "./canvas"
-import {EMPTY_PLAYBACK, THEME_COLORS} from "./renderer"
+import {EMPTY_PLAYBACK} from "./renderer"
 import {WIDGET_DEFINITIONS} from "./widgets/definitions"
 import {WidgetSettings} from "./widgets/widget-settings"
 import {SceneControls} from "./scene/scene-controls"
@@ -150,6 +151,7 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
 
     function addWidget(type: Extract<EditorWidgetType, "TWITCH_CHAT" | "SPOTIFY_NOW_PLAYING" | "WINDOW">) {
         if (!layout || layout.widgets.length >= MAX_OVERLAY_WIDGETS) return
+        const design = WIDGET_DESIGNS[layout.theme]
         const widget: EditorWidget = {
             id: crypto.randomUUID(),
             type,
@@ -158,7 +160,12 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
             width: WIDGET_DEFINITIONS[type].width,
             height: WIDGET_DEFINITIONS[type].height,
             zIndex: Math.min(1000, Math.max(0, ...layout.widgets.map((item) => item.zIndex)) + 1),
-            params: {...THEME_COLORS[layout.theme], ...(type === "WINDOW" ? {title: "Fenster"} : {})}
+            params: {
+                design: layout.theme,
+                color: design.color,
+                backgroundColor: design.backgroundColor,
+                ...(type === "WINDOW" ? {title: "Fenster"} : {})
+            }
         }
         setLayout({...layout, widgets: [...layout.widgets, widget]})
         setSelection({type: "widget", id: widget.id})
@@ -180,7 +187,13 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
                 width: 480,
                 height: 270,
                 zIndex: Math.min(1000, top + index + 1),
-                params: {color: "#ffffff", backgroundColor: "transparent", assetId: asset.id, fit: "contain"}
+                params: {
+                    design: current.theme,
+                    color: "#ffffff",
+                    backgroundColor: "transparent",
+                    assetId: asset.id,
+                    fit: "contain"
+                }
             }))
             return {...current, widgets: [...current.widgets, ...widgets]}
         })
