@@ -91,8 +91,6 @@ export function SpotifyWidget({
     return (
         <div className="overlay-spotify">
             {playback.albumUrl && (
-                // Spotify album covers are remote; CORS enables the original spectrum color sampling.
-                // eslint-disable-next-line @next/next/no-img-element
                 <img
                     key={playback.albumUrl}
                     className="overlay-album"

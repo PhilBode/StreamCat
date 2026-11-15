@@ -1,0 +1,21 @@
+.obs-overlay {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.obs-scaled-scene {
+    flex: none;
+}
+.obs-unavailable {
+    display: inline-block;
+    margin: 12px;
+    padding: 8px 12px;
+    font-size: 14px;
+    color: #d7d7de;
+    background: #171821cc;
+    border-radius: 5px;
+}

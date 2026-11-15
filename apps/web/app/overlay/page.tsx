@@ -1,5 +1,5 @@
-import {PublicOverlay} from "@/components/overlay/public-overlay"
+import {OverlayPlayer} from "@streamcat/overlay-engine"
 
 export default function OverlayPage() {
-    return <PublicOverlay />
+    return <OverlayPlayer />
 }

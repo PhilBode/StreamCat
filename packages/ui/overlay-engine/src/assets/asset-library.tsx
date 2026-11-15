@@ -1,10 +1,9 @@
-/* eslint-disable @next/next/no-img-element -- Authenticated uploads and animated GIFs must use their original media URLs. */
 "use client"
 
 import {useRef, useState} from "react"
 import type {OverlayAsset} from "@streamcat/interfaces"
 import {ASSET_ACCEPT} from "./use-overlay-assets"
-import {Skeleton} from "../../ui/skeleton"
+import {Skeleton} from "../internal/skeleton"
 
 export const ASSET_DRAG_TYPE = "application/x-streamcat-asset"
 
@@ -82,7 +81,7 @@ export function AssetLibrary({
                     [0, 1, 2, 3].map((asset) => (
                         <div className="overlay-asset-item" key={asset} aria-hidden="true">
                             <Skeleton className="asset-skeleton-thumbnail" />
-                            <Skeleton className="skeleton-text" />
+                            <Skeleton className="overlay-skeleton-text" />
                         </div>
                     ))}
                 {assets.map((asset) => (

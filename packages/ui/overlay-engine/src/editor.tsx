@@ -1,7 +1,6 @@
 "use client"
 
-import Link from "next/link"
-import {useEffect, useState} from "react"
+import {useEffect, useState, type ElementType, type ReactNode} from "react"
 import {
     MAX_OVERLAY_WIDGETS,
     WIDGET_DESIGNS,
@@ -13,7 +12,8 @@ import {
     type OverlayAsset,
     type OverlayLayout
 } from "@streamcat/interfaces"
-import {ApiError, apiRequest} from "../../lib/api"
+import {isAuthError, type OverlayRequest} from "./api/transport"
+import {useStableRequest} from "./api/use-stable-request"
 import {OverlayCanvas, type OverlaySelection} from "./canvas"
 import {EMPTY_PLAYBACK} from "./renderer"
 import {WIDGET_DEFINITIONS} from "./widgets/definitions"
@@ -30,7 +30,19 @@ import {EditorSkeleton} from "./editor-skeleton"
 
 const EMPTY_CHAT: OverlayChat = {channel: null, url: null}
 
-function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => void}) {
+function OverlaySession({
+    basePath,
+    request,
+    loginHref,
+    previewIntervalMs,
+    onRetry
+}: {
+    basePath: string
+    request: OverlayRequest
+    loginHref?: string
+    previewIntervalMs: number
+    onRetry: () => void
+}) {
     const {
         overlay,
         scenes,
@@ -53,7 +65,7 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
         saveScene,
         rotateScene,
         renameScene
-    } = useOverlayScenes(guildId)
+    } = useOverlayScenes(basePath, request)
     const {layout, setLayout} = history
     const [selection, setSelection] = useState<OverlaySelection>(null)
     const selectedId = selection?.type === "widget" ? selection.id : null
@@ -62,7 +74,7 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
     const [liveError, setLiveError] = useState<string | null>(null)
     const [previewAudio, setPreviewAudio] = useState(false)
     const [sidebar, setSidebar] = useState<"widgets" | "design" | "assets">("widgets")
-    const media = useOverlayAssets(path, reportError)
+    const media = useOverlayAssets(basePath, request, reportError)
 
     const overlayId = overlay?.id
     useEffect(() => {
@@ -71,7 +83,7 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
         let timer: ReturnType<typeof setTimeout> | undefined
         async function poll() {
             try {
-                const result = await apiRequest<{playback: OverlayPlayback; chat: OverlayChat}>(`${path}/preview`, {
+                const result = await request<{playback: OverlayPlayback; chat: OverlayChat}>(`${path}/preview`, {
                     signal: controller.signal
                 })
                 if (controller.signal.aborted) return
@@ -83,19 +95,19 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
                 setPlayback({status: "error", text: "Live-Daten momentan nicht erreichbar", albumUrl: null})
                 setChat(EMPTY_CHAT)
                 setLiveError("Live-Daten konnten nicht aktualisiert werden. Wir versuchen es erneut.")
-                if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+                if (isAuthError(cause)) {
                     reportError(cause)
                     return
                 }
             }
-            if (!controller.signal.aborted) timer = setTimeout(() => void poll(), 5000)
+            if (!controller.signal.aborted) timer = setTimeout(() => void poll(), previewIntervalMs)
         }
         void poll()
         return () => {
             controller.abort()
             clearTimeout(timer)
         }
-    }, [overlayId, path, reportError])
+    }, [overlayId, path, request, reportError, previewIntervalMs])
 
     function updateWidget(widget: EditorWidget) {
         setLayout((current) =>
@@ -221,9 +233,11 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
                     <p>{error}</p>
                     {!overlay && (
                         <div className="actions">
-                            <a className="button" href="/api/backend/dashboard/auth/login">
-                                Mit Discord anmelden
-                            </a>
+                            {loginHref && (
+                                <a className="button" href={loginHref}>
+                                    Mit Discord anmelden
+                                </a>
+                            )}
                             <button className="button" onClick={onRetry}>
                                 Erneut versuchen
                             </button>
@@ -457,19 +471,50 @@ function OverlaySession({guildId, onRetry}: {guildId: string; onRetry: () => voi
     )
 }
 
-export function OverlayEditor({guildId}: {guildId: string}) {
+export type OverlayLinkProps = {
+    href: string
+    className?: string
+    children?: ReactNode
+}
+
+export type OverlayEditorProps = {
+    basePath: string
+    request: OverlayRequest
+    backHref: string
+    loginHref?: string
+    title?: string
+    backLabel?: string
+    previewIntervalMs?: number
+    linkComponent?: ElementType<OverlayLinkProps>
+}
+
+export function OverlayEditor({
+    basePath,
+    request,
+    backHref,
+    loginHref,
+    title = "Overlay gestalten",
+    backLabel = "Zur Serverübersicht",
+    previewIntervalMs = 5000,
+    linkComponent
+}: OverlayEditorProps) {
     const [revision, setRevision] = useState(0)
+    const stableRequest = useStableRequest(request)
+    const LinkComponent = linkComponent ?? "a"
     return (
         <section className="overlay-editor">
             <header className="overlay-editor-heading">
-                <Link className="back-link" href={`/dashboard/${guildId}`}>
-                    Zur Serverübersicht
-                </Link>
-                <h1>Overlay gestalten</h1>
+                <LinkComponent className="back-link" href={backHref}>
+                    {backLabel}
+                </LinkComponent>
+                <h1>{title}</h1>
             </header>
             <OverlaySession
-                key={`${guildId}-${revision}`}
-                guildId={guildId}
+                key={`${basePath}-${revision}`}
+                basePath={basePath}
+                request={stableRequest}
+                loginHref={loginHref}
+                previewIntervalMs={Math.max(1000, previewIntervalMs)}
                 onRetry={() => setRevision((value) => value + 1)}
             />
         </section>

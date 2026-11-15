@@ -1,8 +1,7 @@
 import type {Metadata} from "next"
 import type {ReactNode} from "react"
 import "./globals.css"
-import "../components/overlay/overlay.css"
-import "../components/overlay/editor.css"
+import "@streamcat/overlay-engine/styles.css"
 
 export const metadata: Metadata = {
     title: "StreamCat",

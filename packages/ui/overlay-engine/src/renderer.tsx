@@ -1,4 +1,3 @@
-/* eslint-disable @next/next/no-img-element -- Authenticated uploads and animated GIFs must use their original media URLs. */
 import type {CSSProperties} from "react"
 import {
     WIDGET_DESIGNS,

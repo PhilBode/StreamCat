@@ -25,7 +25,6 @@ export function AudioSpectrum({enabled, deviceName, color}: {enabled: boolean; d
         async function start() {
             try {
                 if (!navigator.mediaDevices) throw new Error("Audio input requires HTTPS or localhost")
-                // Request access first: browsers hide device labels until permission is granted.
                 stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         channelCount: 2,
@@ -72,10 +71,8 @@ export function AudioSpectrum({enabled, deviceName, color}: {enabled: boolean; d
                 let height = 0
                 let bins = new Uint8Array(32)
                 function resize() {
-                    // Use logical pixels so a scaled editor preview keeps the same bar density as OBS.
                     width = element!.clientWidth
                     height = element!.clientHeight
-                    // Render enough pixels for larger OBS sources while retaining logical bar density.
                     const rect = element!.getBoundingClientRect()
                     const ratio = window.devicePixelRatio || 1
                     element!.width = Math.ceil(Math.max(width, rect.width) * ratio)
@@ -96,7 +93,6 @@ export function AudioSpectrum({enabled, deviceName, color}: {enabled: boolean; d
                 }
                 observer = new ResizeObserver(resize)
                 observer.observe(element!)
-                // The logical box can stay unchanged when the scene's CSS zoom changes.
                 onResize = () => {
                     cancelAnimationFrame(resizeFrame)
                     resizeFrame = requestAnimationFrame(resize)

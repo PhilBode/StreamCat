@@ -2,12 +2,12 @@
 
 import {useEffect, useRef, useState} from "react"
 import type {OverlayAsset} from "@streamcat/interfaces"
-import {apiRequest} from "../../../lib/api"
+import type {OverlayRequest} from "../api/transport"
 
 export const ASSET_ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
 const MAX_FILE_SIZE = 100 * 1024 * 1024
 
-export function useOverlayAssets(path: string, onError: (cause: unknown) => void) {
+export function useOverlayAssets(basePath: string, request: OverlayRequest, onError: (cause: unknown) => void) {
     const [assets, setAssets] = useState<OverlayAsset[]>([])
     const [uploading, setUploading] = useState(false)
     const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -19,7 +19,7 @@ export function useOverlayAssets(path: string, onError: (cause: unknown) => void
     useEffect(() => {
         const controller = new AbortController()
         lifetime.current = controller
-        void apiRequest<OverlayAsset[]>(`${path}/assets`, {signal: controller.signal})
+        void request<OverlayAsset[]>(`${basePath}/assets`, {signal: controller.signal})
             .then((result) => {
                 if (!controller.signal.aborted) setAssets(result)
             })
@@ -30,7 +30,7 @@ export function useOverlayAssets(path: string, onError: (cause: unknown) => void
                 if (!controller.signal.aborted) setLoading(false)
             })
         return () => controller.abort()
-    }, [path, onError])
+    }, [basePath, request, onError])
 
     async function uploadFiles(files: File[]): Promise<OverlayAsset[]> {
         const controller = lifetime.current
@@ -44,7 +44,7 @@ export function useOverlayAssets(path: string, onError: (cause: unknown) => void
                     throw new Error("Unterstützt werden PNG, JPG, WebP, GIF, MP4 und WebM.")
                 if (file.size > MAX_FILE_SIZE) throw new Error("Eine Datei darf maximal 100 MiB groß sein.")
                 setProgress(`Datei ${index + 1} / ${files.length} wird hochgeladen …`)
-                const asset = await apiRequest<OverlayAsset>(`${path}/assets`, {
+                const asset = await request<OverlayAsset>(`${basePath}/assets`, {
                     method: "POST",
                     headers: {
                         "Content-Type": file.type || "application/octet-stream",
@@ -75,8 +75,8 @@ export function useOverlayAssets(path: string, onError: (cause: unknown) => void
         pending.current = true
         setDeletingId(asset.id)
         try {
-            await apiRequest(
-                `${path}/assets/${encodeURIComponent(asset.id)}`,
+            await request(
+                `${basePath}/assets/${encodeURIComponent(asset.id)}`,
                 {method: "DELETE", signal: controller.signal},
                 "Das Medium konnte nicht gelöscht werden. Bitte versuche es erneut."
             )

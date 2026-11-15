@@ -7,7 +7,7 @@
     padding: 16px;
     margin-bottom: 24px;
 }
-.editor-skeleton-toolbar > .skeleton-control {
+.editor-skeleton-toolbar > .overlay-skeleton-control {
     width: 320px;
     margin-right: auto;
 }

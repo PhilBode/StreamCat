@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/ui/*"
   ],
   "scripts": {
     "postinstall": "bun scripts/build-version.ts --if-missing",
@@ -13,7 +14,7 @@
     "dev:tunnel": "docker compose up -d --build --no-deps cloudflared",
     "debug": "bun run dev:prepare && concurrently --kill-others -n backend,web -c blue,green \"bun run --cwd apps/backend debug\" \"bun run --cwd apps/web dev\"",
     "build": "bun run --cwd packages/db db:generate && bun run typecheck && bun run --cwd apps/web build",
-    "typecheck": "bun run --cwd apps/backend typecheck && bun run --cwd apps/web typecheck",
+    "typecheck": "bun run --cwd packages/ui/overlay-engine typecheck && bun run --cwd apps/backend typecheck && bun run --cwd apps/web typecheck",
     "start": "concurrently --kill-others -n backend,web -c blue,green \"bun run --cwd apps/backend start\" \"bun run --cwd apps/web start\"",
     "db:up": "docker compose -f compose.yml -f compose.dev.yml up -d --build postgres --wait && bun run secrets:sync",
     "db:prepare": "bun run db:up && bun run --cwd packages/db db:generate && bun run --cwd packages/db db:deploy",

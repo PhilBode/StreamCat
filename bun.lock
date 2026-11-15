@@ -45,6 +45,7 @@
       "dependencies": {
         "@streamcat/core": "workspace:*",
         "@streamcat/interfaces": "workspace:*",
+        "@streamcat/overlay-engine": "workspace:*",
         "next": "16.4.3",
         "react": "19.3.1",
         "react-dom": "19.3.1",
@@ -96,6 +97,22 @@
       "devDependencies": {
         "@types/node": "^26.6.5",
         "typescript": "^7.0.2",
+      },
+    },
+    "packages/ui/overlay-engine": {
+      "name": "@streamcat/overlay-engine",
+      "version": "0.1.0",
+      "dependencies": {
+        "@streamcat/interfaces": "workspace:*",
+      },
+      "devDependencies": {
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "typescript": "~6.0.3",
+      },
+      "peerDependencies": {
+        "react": ">=19.0.0",
+        "react-dom": ">=19.0.0",
       },
     },
   },
@@ -382,6 +399,8 @@
     "@streamcat/db": ["@streamcat/db@workspace:packages/db"],
 
     "@streamcat/interfaces": ["@streamcat/interfaces@workspace:packages/interfaces"],
+
+    "@streamcat/overlay-engine": ["@streamcat/overlay-engine@workspace:packages/ui/overlay-engine"],
 
     "@streamcat/web": ["@streamcat/web@workspace:apps/web"],
 
@@ -1550,6 +1569,8 @@
     "@prisma/get-platform/@prisma/debug": ["@prisma/debug@7.2.0", "", {}, "sha512-YSGTiSlBAVJPzX4ONZmMotL+ozJwQjRmZweQNIq/ER0tQJKJynNkRB3kyvt37eOfsbMCXk3gnLF6J9OJ4QWftw=="],
 
     "@prisma/streams-local/ajv": ["ajv@8.20.0", "", { "dependencies": { "fast-deep-equal": "^3.1.3", "fast-uri": "^3.0.1", "json-schema-traverse": "^1.0.0", "require-from-string": "^2.0.2" } }, "sha512-Thbli+OlOj+iMPYFBVBfJ3OmCAnaSyNn4M1vz9T6Gka5Jt9ba/HIR56joy65tY6kx/FCF5VXNB819Y7/GUrBGA=="],
+
+    "@streamcat/overlay-engine/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 
     "@streamcat/web/typescript": ["typescript@6.0.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw=="],
 

@@ -2,7 +2,7 @@
 
 import {useCallback, useEffect, useRef, useState} from "react"
 import type {GuildOverlay, OverlayLink, OverlayScene} from "@streamcat/interfaces"
-import {ApiError, apiRequest, postJson} from "../../../lib/api"
+import {isAuthError, postJson, type OverlayRequest} from "../api/transport"
 import {useLayoutHistory} from "../history/use-layout-history"
 
 function rememberScene(id: string) {
@@ -11,7 +11,7 @@ function rememberScene(id: string) {
     window.history.replaceState(null, "", url.pathname + url.search)
 }
 
-export function useOverlayScenes(guildId: string) {
+export function useOverlayScenes(basePath: string, request: OverlayRequest) {
     const [overlay, setOverlay] = useState<GuildOverlay | null>(null)
     const [scenes, setScenes] = useState<GuildOverlay[]>([])
     const [loading, setLoading] = useState(true)
@@ -24,13 +24,13 @@ export function useOverlayScenes(guildId: string) {
     const history = useLayoutHistory(!!overlay && !busy, clearNotice)
     const {layout, reset: resetLayout, replace: replaceLayout} = history
     const lifetime = useRef<AbortController | null>(null)
-    const path = `/dashboard/guilds/${encodeURIComponent(guildId)}/overlay`
+    const path = basePath
     const dirty = !!layout && !!overlay && JSON.stringify(layout) !== JSON.stringify(overlay.layout)
 
     const reportError = useCallback(
         (cause: unknown) => {
             setError(cause instanceof Error ? cause.message : "Das Overlay ist momentan nicht erreichbar.")
-            if (cause instanceof ApiError && (cause.status === 401 || cause.status === 403)) {
+            if (isAuthError(cause)) {
                 setOverlay(null)
                 resetLayout(null)
                 setLinks({})
@@ -49,7 +49,7 @@ export function useOverlayScenes(guildId: string) {
     useEffect(() => {
         const controller = new AbortController()
         lifetime.current = controller
-        void apiRequest<GuildOverlay[]>(`${path}/scenes`, {signal: controller.signal})
+        void request<GuildOverlay[]>(`${path}/scenes`, {signal: controller.signal})
             .then((result) => {
                 if (controller.signal.aborted) return
                 const requested = new URLSearchParams(window.location.search).get("scene")
@@ -65,7 +65,7 @@ export function useOverlayScenes(guildId: string) {
                 if (!controller.signal.aborted) setLoading(false)
             })
         return () => controller.abort()
-    }, [path, reportError, resetLayout])
+    }, [path, request, reportError, resetLayout])
 
     async function run(
         action: "create" | "save" | "rotate" | "rename",
@@ -109,7 +109,7 @@ export function useOverlayScenes(guildId: string) {
 
     function createScene(name: string, scene: OverlayScene) {
         return run("create", async (signal) => {
-            const result = await apiRequest<{overlay: GuildOverlay; browserSourceUrl: string}>(
+            const result = await request<{overlay: GuildOverlay; browserSourceUrl: string}>(
                 `${path}/scenes`,
                 postJson({name, scene}, signal)
             )
@@ -126,7 +126,7 @@ export function useOverlayScenes(guildId: string) {
         if (!layout || !overlay) return Promise.resolve(false)
         const revision = history.getRevision()
         return run("save", async (signal) => {
-            const result = await apiRequest<GuildOverlay>(
+            const result = await request<GuildOverlay>(
                 `${path}/scenes/${encodeURIComponent(overlay.id)}/layout`,
                 postJson(layout, signal)
             )
@@ -145,7 +145,7 @@ export function useOverlayScenes(guildId: string) {
     function rotateScene() {
         if (!overlay) return Promise.resolve(false)
         return run("rotate", async (signal) => {
-            const result = await apiRequest<OverlayLink>(
+            const result = await request<OverlayLink>(
                 `${path}/scenes/${encodeURIComponent(overlay.id)}/rotate`,
                 postJson({}, signal)
             )
@@ -156,7 +156,7 @@ export function useOverlayScenes(guildId: string) {
     function renameScene(name: string) {
         if (!overlay) return Promise.resolve(false)
         return run("rename", async (signal) => {
-            const result = await apiRequest<GuildOverlay>(
+            const result = await request<GuildOverlay>(
                 `${path}/scenes/${encodeURIComponent(overlay.id)}/name`,
                 postJson({name}, signal)
             )

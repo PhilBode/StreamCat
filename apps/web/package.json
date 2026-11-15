@@ -15,7 +15,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "@streamcat/interfaces": "workspace:*",
-    "@streamcat/core": "workspace:*"
+    "@streamcat/core": "workspace:*",
+    "@streamcat/overlay-engine": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^26.6.5",

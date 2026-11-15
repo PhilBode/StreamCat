@@ -1,0 +1,200 @@
+/* Fallback theme for hosts that do not provide the StreamCat dashboard theme.
+   Kept in a low-priority layer so an unlayered host theme always wins. */
+@layer overlay-engine-baseline {
+    :root {
+        color-scheme: dark;
+        --color-paper: #000000;
+        --color-paper-2: #080808;
+        --color-paper-3: #161616;
+        --color-ink: #eeeeee;
+        --color-ink-2: #bebebe;
+        --color-muted: #929292;
+        --color-rule: #292929;
+        --color-rule-2: #505050;
+        --color-accent: #f2f2f2;
+        --color-accent-ink: #0a0a0a;
+        --color-accent-wash: #242424;
+        --color-error: #f2f2f2;
+        --color-transparent: transparent;
+        --color-checker-light: #262626;
+        --color-checker-dark: #1b1b1b;
+        --color-guide: #d0d0d0;
+        --color-guide-active: #ffffff;
+        --color-guide-label: #0a0a0aee;
+        --text-sm: 0.8125rem;
+        --space-1: 4px;
+        --space-2: 8px;
+        --space-3: 12px;
+        --space-4: 16px;
+        --space-5: 20px;
+        --space-6: 24px;
+        --bg: var(--color-paper);
+        --border: var(--color-rule);
+        --text: var(--color-ink);
+        --muted: var(--color-muted);
+        --accent: var(--color-accent);
+    }
+
+    .overlay-editor {
+        box-sizing: border-box;
+        color: var(--color-ink);
+        font-family: var(--font-body, ui-monospace, "SFMono-Regular", Consolas, monospace);
+        font-size: var(--text-sm);
+    }
+
+    .overlay-editor *,
+    .overlay-editor *::before,
+    .overlay-editor *::after {
+        box-sizing: border-box;
+    }
+
+    .overlay-editor :where(button, input, select, textarea) {
+        font: inherit;
+    }
+
+    .overlay-editor :where(a) {
+        color: inherit;
+        text-decoration: none;
+    }
+
+    .overlay-editor :where(h1, h2, h3) {
+        font-weight: 500;
+        line-height: 1.3;
+        overflow-wrap: break-word;
+    }
+
+    .overlay-editor :where(h1, h2, h3, p) {
+        margin: 0 0 var(--space-3);
+    }
+
+    .overlay-editor h1 {
+        font-size: 1.75rem;
+        letter-spacing: -0.02em;
+    }
+
+    .overlay-editor h2,
+    .overlay-editor h3 {
+        font-size: 1rem;
+    }
+
+    .overlay-editor .muted {
+        color: var(--color-muted);
+    }
+
+    .overlay-editor .error {
+        color: var(--color-error);
+    }
+
+    .overlay-editor .actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .overlay-editor .actions form {
+        margin: 0;
+    }
+
+    .overlay-editor .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 44px;
+        padding: 12px 20px;
+        border: 1px solid var(--color-rule-2);
+        border-radius: 0;
+        background: transparent;
+        color: var(--color-ink);
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 1.4;
+        cursor: pointer;
+    }
+
+    .overlay-editor .button:hover:not(:disabled) {
+        background: var(--color-ink);
+        border-color: var(--color-ink);
+        color: var(--color-paper);
+    }
+
+    .overlay-editor .button.primary {
+        background: var(--color-ink);
+        border-color: var(--color-ink);
+        color: var(--color-paper);
+    }
+
+    .overlay-editor .button.primary:hover:not(:disabled) {
+        background: var(--color-ink-2);
+        border-color: var(--color-ink-2);
+    }
+
+    .overlay-editor .button:disabled {
+        opacity: 1;
+        background: transparent;
+        color: var(--color-muted);
+        border-color: var(--color-rule);
+        cursor: not-allowed;
+    }
+
+    .overlay-editor :where(input:not([type="color"]):not([type="checkbox"]):not([type="range"]), select, textarea) {
+        min-height: 44px;
+        border: 1px solid var(--color-rule-2);
+        border-radius: 0;
+        background: var(--color-paper);
+        color: var(--color-ink);
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    .overlay-editor :where(input, textarea)::placeholder {
+        color: var(--color-muted);
+        opacity: 1;
+    }
+
+    .overlay-editor :where(input, select, textarea):disabled {
+        color: var(--color-muted);
+        border-color: var(--color-rule);
+        cursor: not-allowed;
+    }
+
+    .overlay-editor .panel {
+        border: 1px solid var(--color-rule);
+        border-radius: 0;
+        padding: 32px;
+        background: transparent;
+        color: var(--color-ink);
+    }
+
+    .overlay-editor .notice {
+        padding: 12px 16px;
+        margin-bottom: 16px;
+        border: 1px solid var(--color-rule-2);
+        border-left: 3px solid var(--color-ink);
+        background: var(--color-paper-2);
+        font-size: 12px;
+    }
+
+    .overlay-editor .notice p {
+        margin: 4px 0 0;
+    }
+
+    .overlay-editor .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-height: 36px;
+        margin-bottom: 24px;
+        color: var(--color-muted);
+        font-size: 12px;
+    }
+
+    .overlay-editor .back-link::before {
+        content: "<";
+    }
+
+    .overlay-editor .back-link:hover {
+        color: var(--color-ink);
+    }
+}

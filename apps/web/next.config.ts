@@ -6,6 +6,7 @@ import {backendUrl as backend} from "./lib/backend"
 const config: NextConfig = {
     output: "standalone",
     outputFileTracingRoot: resolve(__dirname, "../.."),
+    transpilePackages: ["@streamcat/overlay-engine"],
     experimental: {proxyClientMaxBodySize: "100mb", proxyTimeout: 120000},
     logging: {incomingRequests: {ignore: [/^\/api\/backend\/overlays\/assets\//]}},
     allowedDevOrigins: [new URL(frontendUrl()).hostname, "localhost", "127.0.0.1"],

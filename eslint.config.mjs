@@ -12,7 +12,7 @@ export default defineConfig([
         "apps/web/**"
     ]),
     {
-        files: ["**/*.{js,mjs,ts}"],
+        files: ["**/*.{js,mjs,ts,tsx}"],
         extends: [js.configs.recommended, tseslint.configs.recommended],
         rules: {
             "@typescript-eslint/no-unused-vars": [
