@@ -1,7 +1,7 @@
 import {BadRequestException} from "@nestjs/common"
 import {
     OVERLAY_THEME_COLORS,
-    WIDGET_DESIGNS,
+    isWidgetDesignId,
     TWITCH_CHAT_DEFAULTS,
     TWITCH_CHAT_FONTS,
     MAX_OVERLAY_WIDGETS,
@@ -49,10 +49,23 @@ function color(value: unknown): string {
     return value
 }
 
-function widgetDesign(value: unknown, fallback: OverlayTheme): WidgetDesignId {
+function designColors(value: unknown): Record<`--${string}`, string> | undefined {
+    if (value === undefined) return undefined
+    const data = object(value)
+    const entries = Object.entries(data)
+    if (entries.length > 20) throw new BadRequestException("Zu viele Design-Farben.")
+    const colors: Record<string, string> = {}
+    for (const [key, entry] of entries) {
+        if (!/^--[a-z0-9-]{1,60}$/.test(key)) throw new BadRequestException("Ungültiger Design-Farbname.")
+        colors[key] = color(entry)
+    }
+    return Object.keys(colors).length ? (colors as Record<`--${string}`, string>) : undefined
+}
+
+function widgetDesign(value: unknown, fallback: WidgetDesignId): WidgetDesignId {
     if (value === undefined) return fallback
-    if (typeof value === "string" && Object.hasOwn(WIDGET_DESIGNS, value)) return value as WidgetDesignId
-    throw new BadRequestException("Unbekanntes Widget-Design.")
+    if (isWidgetDesignId(value)) return value
+    throw new BadRequestException("Ungültiges Widget-Design.")
 }
 
 export function overlayGuides(input: unknown): NonNullable<OverlayLayout["guides"]> {
@@ -164,10 +177,12 @@ export function validateOverlayLayout(input: unknown): OverlayLayout {
         )
             throw new BadRequestException("Ungültiger Audioeingang.")
         const geometry = {id: widget.id, x, y, width, height, zIndex}
+        const colors = designColors(params.designColors)
         const appearance = {
             design: widgetDesign(params.design, theme),
             color: color(params.color),
-            backgroundColor: color(params.backgroundColor)
+            backgroundColor: color(params.backgroundColor),
+            ...(colors ? {designColors: colors} : {})
         }
         switch (widget.type) {
             case "WINDOW":

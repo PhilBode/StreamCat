@@ -1,5 +1,5 @@
 import {MIN_WIDGET_WIDTH, MIN_WIDGET_HEIGHT, type EditorWidget, type OverlayLayout} from "@streamcat/interfaces"
-import {resizeLockedWindow} from "../widgets/window/window-resize"
+import {resizeLockedWindow} from "../widgets/window/logic/window-resize"
 
 export function alignmentTargets(layout: OverlayLayout, widgetId: string) {
     const vertical = [0, layout.width / 2, layout.width, ...(layout.guides?.vertical ?? [])]

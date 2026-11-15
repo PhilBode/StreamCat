@@ -1,14 +1,8 @@
 import type {EditorWidget} from "@streamcat/interfaces"
+import type {WidgetSettingsProps} from "../../types"
 
-export function MediaSettings({
-    widget,
-    onChange,
-    onSetBackground
-}: {
-    widget: Extract<EditorWidget, {type: "IMAGE" | "VIDEO"}>
-    onChange: (widget: EditorWidget) => void
-    onSetBackground: () => void
-}) {
+export function MediaSettings({widget: value, onChange, onSetBackground}: WidgetSettingsProps) {
+    const widget = value as Extract<EditorWidget, {type: "IMAGE" | "VIDEO"}>
     return (
         <>
             <label className="overlay-theme-control">

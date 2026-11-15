@@ -38,6 +38,36 @@ This is a UI library, not a standalone app. A Next.js host must provide:
 
 Fonts, fallback theme and all overlay CSS ship with the package. No separate asset copy is needed.
 
+## Widget designs
+
+Each widget owns its design components:
+
+```text
+widgets/
+  registry.ts
+  settings.tsx
+  types.ts
+  shared/
+  spotify/
+    index.ts
+    logic/
+    designs/
+      artwork.tsx
+      default.ts
+      autumn.ts
+      winter.ts
+```
+
+Each design file exports one complete design definition: id, label, defaults, `colorControls`, optional design `settings`, and the component. The widget's `index.ts` only aggregates them. Adding a design means adding one definition file and one entry in that widget module.
+
+Built-in designs: Spotify `default`/`autumn`/`winter`, Twitch chat `windowed`/`none`, Window `default`/`autumn`/`winter`, Image/Video `default`/`autumn`/`winter`.
+
+Color templates live in `packages/interfaces/src/overlay/color-templates.ts` as `OVERLAY_COLOR_TEMPLATES`. Scene themes and widget design defaults both use them, so the source of a color is always that file.
+
+`colorControls` declare what the editor may change. Keys are `color`, `backgroundColor`, or CSS custom properties such as `--window-bg`. Defaults come from the design's `color`, `backgroundColor` and `tokens`; user values are stored in `params.color`, `params.backgroundColor` and `params.designColors`.
+
+Design components must use `currentColor` or CSS variables for customizable parts. Color-control defaults must be hex values because the editor uses a native color picker.
+
 ## Usage
 
 The components run in the browser. Inject the request function from the host app.

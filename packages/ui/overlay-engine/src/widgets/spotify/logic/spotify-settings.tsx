@@ -1,16 +1,8 @@
 import type {EditorWidget} from "@streamcat/interfaces"
+import type {WidgetSettingsProps} from "../../types"
 
-export function SpotifySettings({
-    widget,
-    onChange,
-    previewAudio,
-    onPreviewAudioChange
-}: {
-    widget: Extract<EditorWidget, {type: "SPOTIFY_NOW_PLAYING"}>
-    onChange: (widget: EditorWidget) => void
-    previewAudio: boolean
-    onPreviewAudioChange?: (enabled: boolean) => void
-}) {
+export function SpotifySettings({widget: value, onChange, previewAudio, onPreviewAudioChange}: WidgetSettingsProps) {
+    const widget = value as Extract<EditorWidget, {type: "SPOTIFY_NOW_PLAYING"}>
     return (
         <>
             <label className="overlay-checkbox">

@@ -7,7 +7,7 @@ import {
     type OverlayScene,
     type OverlayTheme
 } from "./overlay-dashboard"
-import {WIDGET_DESIGNS} from "./widget-designs"
+import {OVERLAY_COLOR_TEMPLATES, type OverlayColorTemplate} from "./color-templates"
 import {windowHeight} from "./window-geometry"
 
 // Keep this order: existing scenes store the chat provider's numeric font index.
@@ -61,10 +61,15 @@ export function twitchChatUrl(
     return url.toString()
 }
 
+const themeColors = (template: OverlayColorTemplate) => ({
+    color: template.color,
+    backgroundColor: template.backgroundColor
+})
+
 export const OVERLAY_THEME_COLORS: Record<OverlayTheme, {color: string; backgroundColor: string}> = {
-    default: WIDGET_DESIGNS.default,
-    autumn: WIDGET_DESIGNS.autumn,
-    winter: WIDGET_DESIGNS.winter
+    default: themeColors(OVERLAY_COLOR_TEMPLATES.standard),
+    autumn: themeColors(OVERLAY_COLOR_TEMPLATES.autumn),
+    winter: themeColors(OVERLAY_COLOR_TEMPLATES.winter)
 }
 
 function themeWidgetParams(theme: OverlayTheme) {

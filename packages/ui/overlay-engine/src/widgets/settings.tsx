@@ -1,25 +1,41 @@
-import {widgetName} from "./definitions"
-import {SpotifySettings} from "./spotify/spotify-settings"
-import {ChatSettings} from "./twitch-chat/chat-settings"
-import {WindowSettings} from "./window/window-settings"
-import {MediaSettings} from "./media/media-settings"
+import {widgetName} from "./shared/widget-name"
+import {widgetModule} from "./registry"
 import {
     OVERLAY_WIDTH,
     OVERLAY_HEIGHT,
     MIN_WIDGET_WIDTH,
     MIN_WIDGET_HEIGHT,
-    WIDGET_DESIGNS,
-    widgetDesignOptions,
     withWidgetColors,
-    withWidgetDesign,
     windowWidth,
     windowHeight,
     type EditorWidget,
-    type OverlayAsset,
-    type WidgetDesignId
+    type OverlayAsset
 } from "@streamcat/interfaces"
-import {lockedWindowSize} from "./window/window-resize"
-import {ColorField} from "./color-field"
+import {lockedWindowSize} from "./window/logic/window-resize"
+import {ColorField} from "./shared/color-field"
+
+function withModuleDesign<T extends EditorWidget>(
+    widget: T,
+    design: {id: string; color: string; backgroundColor: string}
+): T {
+    return {
+        ...widget,
+        params: {
+            ...widget.params,
+            design: design.id,
+            color: design.color,
+            backgroundColor: design.backgroundColor,
+            designColors: undefined
+        }
+    }
+}
+
+function withDesignColor<T extends EditorWidget>(widget: T, key: `--${string}`, value: string): T {
+    return {
+        ...widget,
+        params: {...widget.params, designColors: {...widget.params.designColors, [key]: value}}
+    }
+}
 
 export function WidgetSettings({
     widget,
@@ -39,6 +55,10 @@ export function WidgetSettings({
     onSetBackground: () => void
 }) {
     const locked = widget.type === "WINDOW" && widget.params.lockContentAspectRatio === true
+    const module = widgetModule(widget.type)
+    const Settings = module.settings
+    const design = module.designs[widget.params.design] ?? module.designs[module.defaultDesign]
+    const DesignSettings = design.settings
     const limits = {
         x: [0, OVERLAY_WIDTH - widget.width],
         y: [0, OVERLAY_HEIGHT - widget.height],
@@ -51,6 +71,11 @@ export function WidgetSettings({
             windowHeight(MIN_WIDGET_WIDTH),
             Math.min(limits.height[1], windowHeight(OVERLAY_WIDTH - widget.x))
         ]
+    }
+
+    function selectDesign(id: string) {
+        const design = module.designs[id]
+        if (design) onChange(withModuleDesign(widget, design))
     }
 
     function updateGeometry(field: "x" | "y" | "width" | "height", value: string) {
@@ -76,19 +101,15 @@ export function WidgetSettings({
             <h3>{widgetName(widget, assets)} bearbeiten</h3>
             <label className="overlay-theme-control">
                 Design
-                <select
-                    value={widget.params.design}
-                    onChange={(event) => onChange(withWidgetDesign(widget, event.target.value as WidgetDesignId))}
-                >
-                    {widgetDesignOptions(widget.type).map((id) => (
-                        <option key={id} value={id}>
-                            {WIDGET_DESIGNS[id].label}
+                <select value={design.id} onChange={(event) => selectDesign(event.target.value)}>
+                    {Object.values(module.designs).map((item) => (
+                        <option key={item.id} value={item.id}>
+                            {item.label}
                         </option>
                     ))}
                 </select>
             </label>
             <p className="muted overlay-hint">Das Design gilt nur für dieses Widget.</p>
-            {widget.type === "WINDOW" && <WindowSettings widget={widget} onChange={onChange} />}
             <div className="overlay-geometry">
                 {(["x", "y", "width", "height"] as const).map((field) => (
                     <label key={field}>
@@ -104,30 +125,54 @@ export function WidgetSettings({
                     </label>
                 ))}
             </div>
-            {(widget.type === "SPOTIFY_NOW_PLAYING" || widget.type === "WINDOW") && (
-                <ColorField
-                    label="Textfarbe"
-                    value={widget.params.color}
-                    onChange={(color) => onChange({...widget, params: {...widget.params, color}})}
-                />
-            )}
-            <ColorField
-                label="Hintergrund"
-                value={widget.params.backgroundColor}
-                onChange={(backgroundColor) => onChange(withWidgetColors(widget, {backgroundColor}))}
-            />
-            {widget.type === "SPOTIFY_NOW_PLAYING" && (
-                <SpotifySettings
+            {design.colorControls.map((control) => {
+                if (control.key === "color")
+                    return (
+                        <ColorField
+                            key={control.key}
+                            label={control.label}
+                            value={widget.params.color}
+                            onChange={(color) => onChange(withWidgetColors(widget, {color}))}
+                        />
+                    )
+                if (control.key === "backgroundColor")
+                    return (
+                        <ColorField
+                            key={control.key}
+                            label={control.label}
+                            value={widget.params.backgroundColor}
+                            onChange={(backgroundColor) => onChange(withWidgetColors(widget, {backgroundColor}))}
+                        />
+                    )
+                const key = control.key
+                const value = widget.params.designColors?.[key] ?? design.tokens?.[key] ?? "#ffffff"
+                return (
+                    <ColorField
+                        key={key}
+                        label={control.label}
+                        value={value}
+                        onChange={(next) => onChange(withDesignColor(widget, key, next))}
+                    />
+                )
+            })}
+            {DesignSettings && (
+                <DesignSettings
                     widget={widget}
+                    assets={assets}
                     onChange={onChange}
+                    onSetBackground={onSetBackground}
                     previewAudio={previewAudio}
                     onPreviewAudioChange={onPreviewAudioChange}
                 />
             )}
-            {widget.type === "TWITCH_CHAT" && <ChatSettings widget={widget} onChange={onChange} />}
-            {(widget.type === "IMAGE" || widget.type === "VIDEO") && (
-                <MediaSettings widget={widget} onChange={onChange} onSetBackground={onSetBackground} />
-            )}
+            <Settings
+                widget={widget}
+                assets={assets}
+                onChange={onChange}
+                onSetBackground={onSetBackground}
+                previewAudio={previewAudio}
+                onPreviewAudioChange={onPreviewAudioChange}
+            />
             <button className="button overlay-remove" onClick={onRemove}>
                 Widget entfernen
             </button>

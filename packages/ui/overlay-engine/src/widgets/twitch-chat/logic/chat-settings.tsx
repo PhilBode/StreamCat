@@ -1,13 +1,9 @@
 import {TWITCH_CHAT_DEFAULTS, type EditorWidget} from "@streamcat/interfaces"
+import type {WidgetSettingsProps} from "../../types"
 import {ChatFontField} from "./chat-font-field"
 
-export function ChatSettings({
-    widget,
-    onChange
-}: {
-    widget: Extract<EditorWidget, {type: "TWITCH_CHAT"}>
-    onChange: (widget: EditorWidget) => void
-}) {
+export function ChatSettings({widget: value, onChange}: WidgetSettingsProps) {
+    const widget = value as Extract<EditorWidget, {type: "TWITCH_CHAT"}>
     return (
         <>
             <label className="overlay-theme-control">

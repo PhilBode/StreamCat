@@ -11,7 +11,7 @@ import {BotLoggerService, frontendUrl, type ModuleLogger} from "@streamcat/core"
 import {
     overlayPreset,
     OVERLAY_THEME_COLORS,
-    WIDGET_DESIGNS,
+    isWidgetDesignId,
     OVERLAY_WIDTH,
     OVERLAY_HEIGHT,
     TWITCH_CHAT_DEFAULTS,
@@ -26,8 +26,7 @@ import {
     type OverlaySnapshot,
     type OverlayTheme,
     type OverlayScene,
-    type EditorWidget,
-    type WidgetDesignId
+    type EditorWidget
 } from "@streamcat/interfaces"
 import {overlayGuides, validateOverlayLayout} from "../settings/overlay-layout"
 import {OverlayPlaybackService} from "./overlay-playback.service"
@@ -47,6 +46,14 @@ function sceneName(value: unknown): string {
     if (typeof value !== "string" || value.trim().length < 1 || value.trim().length > 80)
         throw new BadRequestException("Der Szenenname muss 1 bis 80 Zeichen enthalten.")
     return value.trim()
+}
+
+function storedDesignColors(value: unknown): Record<`--${string}`, string> | undefined {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return undefined
+    const entries = Object.entries(value)
+    if (!entries.length || entries.length > 20) return undefined
+    if (entries.some(([key, color]) => !/^--[a-z0-9-]{1,60}$/.test(key) || typeof color !== "string")) return undefined
+    return Object.fromEntries(entries) as Record<`--${string}`, string>
 }
 
 @Injectable()
@@ -188,14 +195,16 @@ export class OverlayService {
         }
         const storedParams = widget.params as Record<string, unknown> | null
         const design =
-            typeof storedParams?.design === "string" && Object.hasOwn(WIDGET_DESIGNS, storedParams.design)
-                ? (storedParams.design as WidgetDesignId)
+            typeof storedParams?.design === "string" && isWidgetDesignId(storedParams.design)
+                ? storedParams.design
                 : theme
+        const designColors = storedDesignColors(storedParams?.designColors)
         const appearance = {
             design,
             color: typeof storedParams?.color === "string" ? storedParams.color : "#ffffff",
             backgroundColor:
-                typeof storedParams?.backgroundColor === "string" ? storedParams.backgroundColor : "#18181b"
+                typeof storedParams?.backgroundColor === "string" ? storedParams.backgroundColor : "#18181b",
+            ...(designColors ? {designColors} : {})
         }
         switch (widget.type) {
             case "WINDOW": {
@@ -229,7 +238,7 @@ export class OverlayService {
                 return {
                     ...geometry,
                     type: "TWITCH_CHAT",
-                    params: {...appearance, ...TWITCH_CHAT_DEFAULTS, ...params}
+                    params: {...TWITCH_CHAT_DEFAULTS, ...params, ...appearance}
                 }
             }
             case "IMAGE":

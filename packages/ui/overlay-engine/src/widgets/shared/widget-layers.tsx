@@ -1,5 +1,5 @@
 import {isMediaWidget, type OverlayAsset, type OverlayLayout} from "@streamcat/interfaces"
-import {widgetName} from "./definitions"
+import {widgetName} from "./widget-name"
 
 export function moveWidgetToBackground(layout: OverlayLayout, widgetId: string): OverlayLayout {
     const background = layout.widgets.find((widget) => widget.id === widgetId)

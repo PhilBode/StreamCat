@@ -13,13 +13,13 @@ import {
     type OverlayPlayback
 } from "@streamcat/interfaces"
 import {OverlayRenderer} from "./renderer"
-import {widgetName} from "./widgets/definitions"
+import {widgetName} from "./widgets/shared/widget-name"
 import {ASSET_DRAG_TYPE} from "./assets/asset-library"
 import {snapWidget} from "./alignment/snap"
 import {AlignmentLines} from "./alignment/alignment-lines"
 import {GuideRulers, type Guides, type GuideSelection} from "./alignment/guide-rulers"
 import {WidgetDistances} from "./alignment/widget-distances"
-import {resizeLockedWindow} from "./widgets/window/window-resize"
+import {resizeLockedWindow} from "./widgets/window/logic/window-resize"
 
 type Corner = "nw" | "ne" | "sw" | "se"
 export type OverlaySelection = {type: "widget"; id: string} | {type: "guide"; guide: GuideSelection} | null

@@ -1,14 +1,10 @@
 import {OVERLAY_WIDTH, OVERLAY_HEIGHT, type EditorWidget} from "@streamcat/interfaces"
+import type {WidgetSettingsProps} from "../../types"
 import {lockedWindowSize} from "./window-resize"
 import {WindowObsSettings} from "./window-obs-settings"
 
-export function WindowSettings({
-    widget,
-    onChange
-}: {
-    widget: Extract<EditorWidget, {type: "WINDOW"}>
-    onChange: (widget: EditorWidget) => void
-}) {
+export function WindowSettings({widget: value, onChange}: WidgetSettingsProps) {
+    const widget = value as Extract<EditorWidget, {type: "WINDOW"}>
     function lockContent(locked: boolean) {
         const size = locked
             ? lockedWindowSize(widget.width, widget.height, OVERLAY_WIDTH - widget.x, OVERLAY_HEIGHT, "width")

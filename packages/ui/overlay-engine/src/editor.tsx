@@ -3,10 +3,8 @@
 import {useEffect, useState, type ElementType, type ReactNode} from "react"
 import {
     MAX_OVERLAY_WIDGETS,
-    WIDGET_DESIGNS,
     isMediaWidget,
     type EditorWidget,
-    type EditorWidgetType,
     type OverlayChat,
     type OverlayPlayback,
     type OverlayAsset,
@@ -16,14 +14,14 @@ import {isAuthError, type OverlayRequest} from "./api/transport"
 import {useStableRequest} from "./api/use-stable-request"
 import {OverlayCanvas, type OverlaySelection} from "./canvas"
 import {EMPTY_PLAYBACK} from "./renderer"
-import {WIDGET_DEFINITIONS} from "./widgets/definitions"
-import {WidgetSettings} from "./widgets/widget-settings"
+import {WidgetSettings} from "./widgets/settings"
 import {SceneControls} from "./scene/scene-controls"
 import {SceneSettings} from "./scene/scene-settings"
 import {ObsLink} from "./scene/obs-link"
 import {AssetLibrary} from "./assets/asset-library"
 import {useOverlayAssets} from "./assets/use-overlay-assets"
-import {WidgetLayers, moveWidgetToBackground} from "./widgets/widget-layers"
+import {WidgetLayers, moveWidgetToBackground} from "./widgets/shared/widget-layers"
+import {WIDGET_CATALOG_TYPES, widgetModule, type AddableWidgetType} from "./widgets/registry"
 import {useOverlayScenes} from "./scene/use-overlay-scenes"
 import {isGroupedField} from "./history/use-layout-history"
 import {EditorSkeleton} from "./editor-skeleton"
@@ -161,21 +159,22 @@ function OverlaySession({
         if (window.confirm(`„${asset.fileName}“ endgültig löschen?`)) void media.removeAsset(asset)
     }
 
-    function addWidget(type: Extract<EditorWidgetType, "TWITCH_CHAT" | "SPOTIFY_NOW_PLAYING" | "WINDOW">) {
+    function addWidget(type: AddableWidgetType) {
         if (!layout || layout.widgets.length >= MAX_OVERLAY_WIDGETS) return
-        const design = WIDGET_DESIGNS[layout.theme]
+        const module = widgetModule(type)
+        const moduleDesign = module.designs[layout.theme] ?? module.designs[module.defaultDesign]
         const widget: EditorWidget = {
             id: crypto.randomUUID(),
             type,
             x: 80 + (layout.widgets.length % 8) * 40,
             y: 80 + (layout.widgets.length % 8) * 40,
-            width: WIDGET_DEFINITIONS[type].width,
-            height: WIDGET_DEFINITIONS[type].height,
+            width: module.width,
+            height: module.height,
             zIndex: Math.min(1000, Math.max(0, ...layout.widgets.map((item) => item.zIndex)) + 1),
             params: {
-                design: layout.theme,
-                color: design.color,
-                backgroundColor: design.backgroundColor,
+                design: moduleDesign.id,
+                color: moduleDesign.color,
+                backgroundColor: moduleDesign.backgroundColor,
                 ...(type === "WINDOW" ? {title: "Fenster"} : {})
             }
         }
@@ -381,27 +380,16 @@ function OverlaySession({
                                 <h2>Widgets</h2>
                                 <p className="muted overlay-hint">Füge ein Widget hinzu und ziehe es in deine Szene.</p>
                                 <div className="overlay-catalog">
-                                    <button
-                                        className="button"
-                                        onClick={() => addWidget("SPOTIFY_NOW_PLAYING")}
-                                        disabled={layout.widgets.length >= MAX_OVERLAY_WIDGETS}
-                                    >
-                                        ＋ Spotify
-                                    </button>
-                                    <button
-                                        className="button"
-                                        onClick={() => addWidget("TWITCH_CHAT")}
-                                        disabled={layout.widgets.length >= MAX_OVERLAY_WIDGETS}
-                                    >
-                                        ＋ Twitch-Chat
-                                    </button>
-                                    <button
-                                        className="button"
-                                        onClick={() => addWidget("WINDOW")}
-                                        disabled={layout.widgets.length >= MAX_OVERLAY_WIDGETS}
-                                    >
-                                        ＋ Fenster
-                                    </button>
+                                    {WIDGET_CATALOG_TYPES.map((type) => (
+                                        <button
+                                            key={type}
+                                            className="button"
+                                            onClick={() => addWidget(type)}
+                                            disabled={layout.widgets.length >= MAX_OVERLAY_WIDGETS}
+                                        >
+                                            ＋ {widgetModule(type).label}
+                                        </button>
+                                    ))}
                                 </div>
                                 <p className="muted overlay-hint">
                                     {layout.widgets.length} / {MAX_OVERLAY_WIDGETS} Widgets
