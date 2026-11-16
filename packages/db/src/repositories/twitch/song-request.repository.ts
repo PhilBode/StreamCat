@@ -99,4 +99,8 @@ export class SongRequestRepository {
     async setEnabled(guildId: string, enabled: boolean): Promise<void> {
         await this.prisma.songRequestConfig.update({where: {guildId}, data: {enabled}})
     }
+
+    async clear(guildId: string): Promise<void> {
+        await this.prisma.songRequestConfig.deleteMany({where: {guildId}})
+    }
 }

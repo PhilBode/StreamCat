@@ -1,4 +1,5 @@
-@import url("./legacy.css");
+@import url("./tokens.css");
+@import url("./base.css");
 
 .site-shell {
     --page-gutter: var(--gutter);

@@ -1,6 +1,6 @@
 import {headers} from "next/headers"
 import {SiteHeader} from "@/components/layout/site-header"
-import {Dashboard} from "@/components/dashboard/dashboard"
+import {Guild} from "@/components/dashboard/guild"
 import {backendUrl} from "../../../../lib/backend"
 
 async function guildName(guildId: string): Promise<string | null> {
@@ -26,7 +26,7 @@ export default async function GuildPage({params}: {params: Promise<{guildId: str
     return (
         <>
             <SiteHeader context={{path: "dashboard", label: name ? `Meine Server / ${name}` : "Meine Server"}} />
-            <Dashboard key={guildId} guildId={guildId} />
+            <Guild key={guildId} guildId={guildId} />
         </>
     )
 }

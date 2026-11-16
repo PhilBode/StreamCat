@@ -70,6 +70,7 @@ export class TwitchConnectionService {
         this.events.unsubscribeFromRedemptions(guildId)
         const auth = await this.authRepo.findByGuildId(guildId)
         await this.authRepo.delete(guildId)
+        await this.requests.clear(guildId)
         if (auth) {
             this.logger.info(`Removed guild auth for ${guildId} (user ${auth.userId})`)
         }

@@ -1,229 +1,145 @@
 "use client"
 
-import {useEffect, useRef, useState, type FormEvent} from "react"
+import {useEffect, useState, type FormEvent} from "react"
 import type {FollowedTwitchStreamer} from "@streamcat/interfaces"
 import {apiRequest, postJson} from "../../../lib/api"
-import {SkeletonList} from "../../ui/skeleton"
+import {Accordion} from "../../ui/accordion"
+import {Button} from "../../ui/button"
+import {IconButton} from "../../ui/button"
+import {CloseIcon} from "../../icons"
+import {TextInput} from "../../ui/text-input"
 import {ProfileAvatar} from "../profile-avatar"
 import {useTemporaryMessage} from "../use-temporary-message"
 import "./followed-streamers.css"
 
 export function FollowedStreamers({guildId}: {guildId: string}) {
-    const [hasOpened, setHasOpened] = useState(false)
     return (
-        <details
-            className="followed-streamers"
-            aria-labelledby="followed-streamers-title"
-            onToggle={(event) => {
-                if (event.currentTarget.open) setHasOpened(true)
-            }}
-        >
-            <summary className="followed-streamers-heading">
-                <h2 id="followed-streamers-title">
-                    Gefolgte Twitch-Kanäle
-                    <span className="muted followed-streamers-description">
-                        Live-Benachrichtigungen für diesen Discord-Server
-                    </span>
-                </h2>
-            </summary>
-            {hasOpened && <FollowedStreamerList key={guildId} guildId={guildId} />}
-        </details>
+        <section className="panel followed-streamers">
+            <div className="followed-streamers-heading">
+                <div className="followed-streamers-title">
+                    <span className="followed-streamers-title-text">Gefolgte Kanäle</span>
+                    <span className="followed-streamers-subtitle">Live-Benachrichtigungen für diesen Server.</span>
+                </div>
+            </div>
+            <div className="panel-rule" aria-hidden="true" />
+            <FollowedStreamerList guildId={guildId} />
+        </section>
     )
 }
 
 function FollowedStreamerList({guildId}: {guildId: string}) {
-    const [streamers, setStreamers] = useState<FollowedTwitchStreamer[]>([])
+    const [streamers, setStreamers] = useState<FollowedTwitchStreamer[] | null>(null)
     const [username, setUsername] = useState("")
-    const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
-    const [loadError, setLoadError] = useTemporaryMessage()
-    const [loadFailed, setLoadFailed] = useState(false)
-    const [formError, setFormError] = useTemporaryMessage()
-    const [notice, setNotice] = useTemporaryMessage()
-    const [removingId, setRemovingId] = useState<string | null>(null)
-    const [revision, setRevision] = useState(0)
-    const lifetime = useRef<AbortController | null>(null)
+    const [error, setError] = useTemporaryMessage()
     const path = `/dashboard/guilds/${encodeURIComponent(guildId)}/twitch/streamers`
 
     useEffect(() => {
         const abort = new AbortController()
-        lifetime.current = abort
-        void apiRequest<FollowedTwitchStreamer[]>(
-            path,
-            {signal: abort.signal},
-            "Twitch-Kanäle konnten nicht geladen werden."
-        )
+        void apiRequest<FollowedTwitchStreamer[]>(path, {signal: abort.signal}, "Kanäle konnten nicht geladen werden.")
             .then((data) => {
-                if (!abort.signal.aborted) {
-                    setStreamers(data)
-                    setLoadFailed(false)
-                }
+                if (!abort.signal.aborted) setStreamers(data)
             })
-            .catch((error) => {
-                if (!abort.signal.aborted) {
-                    setLoadFailed(true)
-                    setLoadError(error instanceof Error ? error.message : "Twitch-Kanäle konnten nicht geladen werden.")
-                }
-            })
-            .finally(() => {
-                if (!abort.signal.aborted) setLoading(false)
+            .catch((cause) => {
+                if (!abort.signal.aborted)
+                    setError(cause instanceof Error ? cause.message : "Kanäle konnten nicht geladen werden.")
             })
         return () => abort.abort()
-    }, [path, revision, setLoadError])
+    }, [path, setError])
 
-    function refresh() {
-        setLoading(true)
-        setLoadError(null)
-        setRevision((value) => value + 1)
-    }
-
-    async function follow(event: FormEvent<HTMLFormElement>) {
+    async function add(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
-        const abort = lifetime.current
-        if (loading || saving || !abort || abort.signal.aborted) return
+        if (saving) return
         setSaving(true)
-        setFormError(null)
-        setNotice(null)
+        setError(null)
         try {
-            const added = await apiRequest<FollowedTwitchStreamer>(
+            const created = await apiRequest<FollowedTwitchStreamer>(
                 path,
-                postJson({username: username.trim()}, abort.signal),
-                "Der Twitch-Kanal konnte nicht hinzugefügt werden."
+                postJson({username: username.trim().toLowerCase()}),
+                "Der Kanal konnte nicht hinzugefügt werden."
             )
-            if (abort.signal.aborted) return
-            const alreadyFollowed = streamers.some((streamer) => streamer.channelId === added.channelId)
-            setStreamers((current) =>
-                alreadyFollowed
-                    ? current.map((streamer) => (streamer.channelId === added.channelId ? added : streamer))
-                    : [...current, added]
-            )
+            setStreamers((current) => {
+                const next = (current ?? []).filter((item) => item.channelId !== created.channelId)
+                return [...next, created]
+            })
             setUsername("")
-            setNotice(
-                alreadyFollowed
-                    ? `${added.displayName} ist bereits in deiner Liste.`
-                    : `${added.displayName} wurde hinzugefügt.`
-            )
-        } catch (error) {
-            if (!abort.signal.aborted)
-                setFormError(
-                    error instanceof Error ? error.message : "Der Twitch-Kanal konnte nicht hinzugefügt werden."
-                )
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "Der Kanal konnte nicht hinzugefügt werden.")
         } finally {
-            if (!abort.signal.aborted) setSaving(false)
+            setSaving(false)
         }
     }
 
-    async function unfollow(streamer: FollowedTwitchStreamer) {
-        const abort = lifetime.current
-        if (loading || saving || !abort || abort.signal.aborted) return
-        setSaving(true)
-        setRemovingId(streamer.channelId)
-        setFormError(null)
-        setNotice(null)
+    async function remove(channelId: string) {
+        setError(null)
+        const previous = streamers
+        setStreamers((current) => (current ?? []).filter((item) => item.channelId !== channelId))
         try {
             await apiRequest(
-                `${path}/${encodeURIComponent(streamer.channelId)}`,
-                {
-                    method: "DELETE",
-                    signal: abort.signal
-                },
-                "Der Follow konnte nicht entfernt werden."
+                `${path}/${encodeURIComponent(channelId)}`,
+                {method: "DELETE"},
+                "Der Kanal konnte nicht entfernt werden."
             )
-            if (abort.signal.aborted) return
-            setStreamers((current) => current.filter((saved) => saved.channelId !== streamer.channelId))
-            setNotice(`${streamer.displayName} wurde entfernt.`)
-        } catch (error) {
-            if (!abort.signal.aborted)
-                setFormError(error instanceof Error ? error.message : "Der Follow konnte nicht entfernt werden.")
-        } finally {
-            if (!abort.signal.aborted) {
-                setSaving(false)
-                setRemovingId(null)
-            }
+        } catch (cause) {
+            setStreamers(previous)
+            setError(cause instanceof Error ? cause.message : "Der Kanal konnte nicht entfernt werden.")
         }
     }
 
+    const loading = !streamers && !error
+
     return (
-        <div className="followed-streamers-content">
-            <button className="button streamer-refresh" onClick={refresh} disabled={loading || saving}>
-                Aktualisieren
-            </button>
-            <form className="streamer-follow-form" onSubmit={(event) => void follow(event)}>
-                <div>
-                    <label htmlFor="twitch-follow-username">Twitch-Benutzername</label>
-                    <input
-                        id="twitch-follow-username"
-                        value={username}
-                        onChange={(event) => setUsername(event.target.value)}
-                        placeholder="twitch_username"
-                        required
-                        pattern="[A-Za-z0-9_]{1,25}"
-                        maxLength={25}
-                        autoComplete="off"
-                        autoCapitalize="none"
-                        spellCheck={false}
-                        disabled={loading || saving}
-                    />
-                </div>
-                <button className="button primary" type="submit" disabled={loading || saving}>
-                    {saving && !removingId ? "Wird hinzugefügt …" : "Kanal hinzufügen"}
-                </button>
+        <>
+            <form className="followed-streamers-form" onSubmit={add}>
+                <TextInput
+                    label="Twitch-Benutzername"
+                    placeholder="twitch_username"
+                    value={username}
+                    onChange={(event) => setUsername(event.target.value)}
+                    required
+                    pattern="[a-zA-Z0-9_]{1,25}"
+                    maxLength={25}
+                    autoComplete="off"
+                    disabled={loading || saving}
+                />
+                <Button type="submit" disabled={loading || saving}>
+                    Kanal hinzufügen
+                </Button>
             </form>
-            {formError && (
-                <p className="notice error" role="alert">
-                    {formError}
+            {error && (
+                <p className="followed-streamers-hint followed-streamers-hint--error" role="alert">
+                    {error}
                 </p>
             )}
-            {notice && (
-                <p className="streamer-follow-notice" role="status">
-                    {notice}
-                </p>
-            )}
-            {loading && !streamers.length && <SkeletonList label="Twitch-Kanäle werden geladen" />}
-            {!loading && loadFailed && !loadError && (
-                <p className="muted">Twitch-Kanäle derzeit nicht verfügbar. Bitte erneut aktualisieren.</p>
-            )}
-            {loadError && (
-                <p className="notice error" role="alert">
-                    {loadError}
-                </p>
-            )}
-            {!loading && !loadFailed && !streamers.length && (
-                <p className="muted">Noch keine Twitch-Kanäle hinzugefügt.</p>
-            )}
-            {streamers.length > 0 && (
-                <ul className="followed-streamer-list" aria-label="Gefolgte Kanäle">
-                    {streamers.map((streamer) => (
-                        <li key={streamer.channelId || streamer.username}>
-                            <ProfileAvatar src={streamer.profilePictureUrl} name={streamer.displayName} />
-                            <div className="followed-streamer-name">
-                                <a
-                                    href={`https://www.twitch.tv/${encodeURIComponent(streamer.username)}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                >
-                                    {streamer.displayName}
-                                </a>
-                                <span className="muted">@{streamer.username}</span>
+            <div className="panel-rule" aria-hidden="true" />
+            {loading ? (
+                <div className="followed-streamers-skeleton" role="status" aria-label="Kanäle werden geladen" />
+            ) : (
+                <Accordion label={`Gefolgte Kanäle · ${streamers?.length ?? 0}`}>
+                    <div className="followed-streamers-list">
+                        {streamers && streamers.length === 0 && (
+                            <p className="followed-streamers-hint">Noch keine Kanäle gefolgt.</p>
+                        )}
+                        {streamers?.map((streamer) => (
+                            <div className="followed-streamers-row" key={streamer.channelId}>
+                                <ProfileAvatar src={streamer.profilePictureUrl} name={streamer.displayName} />
+                                <div className="followed-streamers-text">
+                                    <span className="followed-streamers-name">
+                                        {streamer.mainStream ? `${streamer.displayName} · LIVE` : streamer.displayName}
+                                    </span>
+                                    <span className="followed-streamers-handle">@{streamer.username}</span>
+                                </div>
+                                <IconButton
+                                    typeVariant="secondary"
+                                    label={`@${streamer.username} entfolgen`}
+                                    icon={<CloseIcon />}
+                                    onClick={() => void remove(streamer.channelId)}
+                                />
                             </div>
-                            {streamer.mainStream ? (
-                                <span className="status-pill neutral">Eigenes Konto</span>
-                            ) : (
-                                <button
-                                    type="button"
-                                    className="button streamer-unfollow"
-                                    aria-label={`Follow für ${streamer.displayName} entfernen`}
-                                    title="Follow entfernen"
-                                    disabled={loading || saving}
-                                    onClick={() => void unfollow(streamer)}
-                                >
-                                    <span aria-hidden="true">{removingId === streamer.channelId ? "…" : "×"}</span>
-                                </button>
-                            )}
-                        </li>
-                    ))}
-                </ul>
+                        ))}
+                    </div>
+                </Accordion>
             )}
-        </div>
+        </>
     )
 }
