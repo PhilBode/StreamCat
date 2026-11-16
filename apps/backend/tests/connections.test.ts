@@ -12,6 +12,7 @@ import {DiscordLoginService} from "../src/api/auth/discord-login.service"
 import {OAuthFlowService, type AuthFlowOptions} from "../src/features/account-linking/services/oauth-flow.service"
 import {SpotifyConnectionService} from "../src/features/account-linking/providers/spotify-connection.service"
 import {TwitchConnectionService} from "../src/features/account-linking/providers/twitch-connection.service"
+import {SpotifyService} from "../src/integrations/spotify/spotify.service"
 
 const session = {id: "session-a", userId: "99"}
 let captured: AuthFlowOptions | undefined
@@ -75,6 +76,7 @@ const twitch = {
         {provide: DiscordLoginService, useValue: login},
         {provide: OAuthFlowService, useValue: flow},
         {provide: SpotifyConnectionService, useValue: spotify},
+        {provide: SpotifyService, useValue: {disconnectGuild: async () => {}}},
         {provide: TwitchConnectionService, useValue: twitch},
         {
             provide: SpotifyConfigRepository,

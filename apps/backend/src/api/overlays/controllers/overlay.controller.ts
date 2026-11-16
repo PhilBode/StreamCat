@@ -1,6 +1,6 @@
 import {SessionGuard} from "../../auth/guards/session.guard"
 import {GuildAdminGuard} from "../../auth/guards/guild-admin.guard"
-import {Body, Controller, UseGuards, Get, Header, Param, Post} from "@nestjs/common"
+import {Body, Controller, Delete, UseGuards, Get, Header, Param, Post} from "@nestjs/common"
 import {OverlayService} from "../../../features/overlays/services/overlay.service"
 import {OverlayPlaybackService} from "../../../features/overlays/services/overlay-playback.service"
 
@@ -46,6 +46,13 @@ export class OverlayController {
     @Header("Cache-Control", "private, no-store")
     async renameScene(@Param("guildId") guildId: string, @Param("overlayId") overlayId: string, @Body() body: unknown) {
         return this.overlays.renameScene(guildId, overlayId, body)
+    }
+
+    @Delete("scenes/:overlayId")
+    @Header("Cache-Control", "private, no-store")
+    async deleteScene(@Param("guildId") guildId: string, @Param("overlayId") overlayId: string) {
+        await this.overlays.deleteScene(guildId, overlayId)
+        return {success: true}
     }
 
     @Get("preview")

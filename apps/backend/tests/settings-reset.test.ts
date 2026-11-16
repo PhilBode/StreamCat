@@ -48,7 +48,7 @@ test("removing guild auth still reconciles chat after a guild cascade deleted th
         {} as never,
         {findByGuildId: async () => null, delete: deleteAuth} as never,
         {} as never,
-        {} as never,
+        {clear: async () => {}} as never,
         {reconcile} as never,
         {forModule: () => ({info: mock(() => {})})} as never,
         {unsubscribeFromRedemptions} as never,

@@ -14,7 +14,7 @@ import {
 } from "@streamcat/interfaces"
 import {OverlayRenderer} from "./renderer"
 import {widgetName} from "./widgets/shared/widget-name"
-import {ASSET_DRAG_TYPE} from "./assets/asset-library"
+import {ASSET_DRAG_TYPE} from "./assets/use-overlay-assets"
 import {snapWidget} from "./alignment/snap"
 import {AlignmentLines} from "./alignment/alignment-lines"
 import {GuideRulers, type Guides, type GuideSelection} from "./alignment/guide-rulers"
@@ -76,11 +76,20 @@ export function OverlayCanvas({
     const draggedWidget = layout.widgets.find((widget) => widget.id === draggingId)
     useEffect(() => {
         const element = container.current
-        if (!element) return
-        const observer = new ResizeObserver((entries) => setScale(entries[0].contentRect.width / layout.width))
-        observer.observe(element)
+        const section = element?.closest<HTMLElement>(".overlay-preview-section")
+        if (!element || !section) return
+        const observer = new ResizeObserver(() => {
+            // Fit both axes: section padding (24/16/8) + rulers (24px left, 24px top, 1px borders).
+            const box = section.getBoundingClientRect()
+            const scale = Math.min(
+                (box.width - 32 - 28) / layout.width,
+                (box.height - 32 - 26) / layout.height
+            )
+            setScale(Math.max(0, scale))
+        })
+        observer.observe(section)
         return () => observer.disconnect()
-    }, [layout.width])
+    }, [layout.width, layout.height])
 
     function selectGuide(guide: GuideSelection | null) {
         onSelect(guide ? {type: "guide", guide} : null)
@@ -214,6 +223,7 @@ export function OverlayCanvas({
                 <div
                     className="overlay-preview"
                     ref={container}
+                    style={{width: layout.width * scale, height: layout.height * scale}}
                     aria-label="Overlay-Vorschau"
                     onDrop={drop}
                     onDragOver={(event) => {
@@ -243,79 +253,84 @@ export function OverlayCanvas({
                                 onSelect(null)
                             }}
                         >
-                            {layout.widgets.map((widget) => (
-                                <div
-                                    key={widget.id}
-                                    className={`overlay-hitbox ${widget.id === selectedId ? "selected" : ""}`}
-                                    role="button"
-                                    tabIndex={0}
-                                    aria-label={`${widgetName(widget, assets)}-Widget auswählen und verschieben`}
-                                    style={{
-                                        left: widget.x,
-                                        top: widget.y,
-                                        width: widget.width,
-                                        height: widget.height,
-                                        zIndex: widget.zIndex,
-                                        borderRadius: widget.type === "IMAGE" || widget.type === "VIDEO" ? 0 : undefined
-                                    }}
-                                    onFocus={() => {
-                                        onSelect({type: "widget", id: widget.id})
-                                    }}
-                                    onPointerDown={(event) => start(event, widget)}
-                                    onPointerMove={move}
-                                    onPointerUp={end}
-                                    onPointerCancel={end}
-                                    onLostPointerCapture={end}
-                                    onKeyDown={(event) => {
-                                        if (event.defaultPrevented) return
-                                        if (event.key === "Delete" || event.key === "Backspace") {
-                                            event.preventDefault()
-                                            if (!gesture.current) onRemove(widget.id)
-                                            return
-                                        }
-                                        if (event.key === "Enter" || event.key === " ") {
-                                            event.preventDefault()
+                            {layout.widgets
+                                .filter((widget) => !widget.hidden)
+                                .map((widget) => (
+                                    <div
+                                        key={widget.id}
+                                        className={`overlay-hitbox ${widget.id === selectedId ? "selected" : ""}`}
+                                        role="button"
+                                        tabIndex={0}
+                                        aria-label={`${widgetName(widget, assets)}-Widget auswählen und verschieben`}
+                                        style={{
+                                            left: widget.x,
+                                            top: widget.y,
+                                            width: widget.width,
+                                            height: widget.height,
+                                            zIndex: widget.zIndex,
+                                            borderRadius:
+                                                widget.type === "IMAGE" || widget.type === "VIDEO" ? 0 : undefined
+                                        }}
+                                        onFocus={() => {
                                             onSelect({type: "widget", id: widget.id})
-                                        }
-                                        const delta = event.shiftKey ? 10 : 1
-                                        if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
-                                            event.preventDefault()
-                                            onChange({
-                                                ...widget,
-                                                x: clamp(
-                                                    widget.x +
-                                                        (event.key === "ArrowRight"
-                                                            ? delta
-                                                            : event.key === "ArrowLeft"
-                                                              ? -delta
-                                                              : 0),
-                                                    0,
-                                                    layout.width - widget.width
-                                                ),
-                                                y: clamp(
-                                                    widget.y +
-                                                        (event.key === "ArrowDown"
-                                                            ? delta
-                                                            : event.key === "ArrowUp"
-                                                              ? -delta
-                                                              : 0),
-                                                    0,
-                                                    layout.height - widget.height
-                                                )
-                                            })
-                                        }
-                                    }}
-                                >
-                                    {selectedId === widget.id &&
-                                        corners.map((corner) => (
-                                            <div
-                                                key={corner}
-                                                className={`overlay-resize ${corner}`}
-                                                onPointerDown={(event) => start(event, widget, corner)}
-                                            />
-                                        ))}
-                                </div>
-                            ))}
+                                        }}
+                                        onPointerDown={(event) => start(event, widget)}
+                                        onPointerMove={move}
+                                        onPointerUp={end}
+                                        onPointerCancel={end}
+                                        onLostPointerCapture={end}
+                                        onKeyDown={(event) => {
+                                            if (event.defaultPrevented) return
+                                            if (event.key === "Delete" || event.key === "Backspace") {
+                                                event.preventDefault()
+                                                if (!gesture.current) onRemove(widget.id)
+                                                return
+                                            }
+                                            if (event.key === "Enter" || event.key === " ") {
+                                                event.preventDefault()
+                                                onSelect({type: "widget", id: widget.id})
+                                            }
+                                            const delta = event.shiftKey ? 10 : 1
+                                            if (
+                                                ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)
+                                            ) {
+                                                event.preventDefault()
+                                                onChange({
+                                                    ...widget,
+                                                    x: clamp(
+                                                        widget.x +
+                                                            (event.key === "ArrowRight"
+                                                                ? delta
+                                                                : event.key === "ArrowLeft"
+                                                                  ? -delta
+                                                                  : 0),
+                                                        0,
+                                                        layout.width - widget.width
+                                                    ),
+                                                    y: clamp(
+                                                        widget.y +
+                                                            (event.key === "ArrowDown"
+                                                                ? delta
+                                                                : event.key === "ArrowUp"
+                                                                  ? -delta
+                                                                  : 0),
+                                                        0,
+                                                        layout.height - widget.height
+                                                    )
+                                                })
+                                            }
+                                        }}
+                                    >
+                                        {selectedId === widget.id &&
+                                            corners.map((corner) => (
+                                                <div
+                                                    key={corner}
+                                                    className={`overlay-resize ${corner}`}
+                                                    onPointerDown={(event) => start(event, widget, corner)}
+                                                />
+                                            ))}
+                                    </div>
+                                ))}
                         </div>
                     </div>
                     <div className="overlay-alignment-feedback" style={{transform: `scale(${scale})`}}>

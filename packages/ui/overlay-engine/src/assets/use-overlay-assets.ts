@@ -5,6 +5,7 @@ import type {OverlayAsset} from "@streamcat/interfaces"
 import type {OverlayRequest} from "../api/transport"
 
 export const ASSET_ACCEPT = "image/png,image/jpeg,image/webp,image/gif,video/mp4,video/webm"
+export const ASSET_DRAG_TYPE = "application/x-streamcat-asset"
 const MAX_FILE_SIZE = 100 * 1024 * 1024
 
 export function useOverlayAssets(basePath: string, request: OverlayRequest, onError: (cause: unknown) => void) {

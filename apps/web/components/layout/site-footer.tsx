@@ -5,7 +5,7 @@ export function SiteFooter() {
     return (
         <footer className="site-footer">
             <span title={versionInfo.builtAt ? `Build: ${versionInfo.builtAt}` : "Local development"}>
-                Version {versionInfo.version.split("+")[0]}
+                Version {versionInfo.version}
             </span>
         </footer>
     )

@@ -1,0 +1,26 @@
+.profile-avatar-frame {
+    display: inline-flex;
+    overflow: hidden;
+    width: 48px;
+    height: 48px;
+}
+.profile-avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    color: var(--color-ink-2);
+    font-size: var(--text-md);
+    line-height: 1;
+}
+.profile-avatar.placeholder {
+    background: var(--color-paper-3);
+    border: 1px solid var(--color-rule);
+    border-radius: 50%;
+}
+.profile-avatar-frame img {
+    display: block;
+    width: 100%;
+    height: 100%;
+}

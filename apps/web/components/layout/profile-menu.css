@@ -13,6 +13,16 @@
     font-size: var(--text-md);
     line-height: 1;
 }
+
+.profile-menu-trigger .profile-avatar-frame,
+.profile-menu-trigger .profile-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+}
+.profile-menu-trigger .profile-avatar.placeholder {
+    border-radius: 50%;
+}
 .profile-menu-name {
     color: var(--color-ink);
 }
@@ -61,8 +71,4 @@
 }
 .profile-menu-item-logout {
     color: var(--color-danger);
-}
-.profile-menu .profile-avatar {
-    width: 36px;
-    height: 36px;
 }

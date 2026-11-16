@@ -1,7 +1,6 @@
 import {OVERLAY_WIDTH, OVERLAY_HEIGHT, type EditorWidget} from "@streamcat/interfaces"
 import type {WidgetSettingsProps} from "../../types"
 import {lockedWindowSize} from "./window-resize"
-import {WindowObsSettings} from "./window-obs-settings"
 
 export function WindowSettings({widget: value, onChange}: WidgetSettingsProps) {
     const widget = value as Extract<EditorWidget, {type: "WINDOW"}>
@@ -19,26 +18,40 @@ export function WindowSettings({widget: value, onChange}: WidgetSettingsProps) {
 
     return (
         <>
-            <label className="overlay-theme-control">
-                Fenstertitel
+            <label className="overlay-field">
+                <span className="overlay-field-label">Fenstertitel</span>
                 <input
+                    className="overlay-field-input"
                     maxLength={80}
                     value={widget.params.title ?? "Fenster"}
                     onChange={(event) => onChange({...widget, params: {...widget.params, title: event.target.value}})}
                 />
             </label>
-            <label className="overlay-checkbox">
+            <label className="overlay-check">
                 <input
                     type="checkbox"
+                    className="overlay-check-input"
                     checked={widget.params.lockContentAspectRatio === true}
                     onChange={(event) => lockContent(event.target.checked)}
                 />
+                <span className="overlay-check-box" aria-hidden="true" />
                 Content auf 16:9 sperren
             </label>
-            <p className="muted overlay-hint">
-                Gilt für die innere Fläche unter dem Header. Webcam/Game bleiben separate OBS-Quellen.
+            <label className="overlay-check">
+                <input
+                    type="checkbox"
+                    className="overlay-check-input"
+                    checked={widget.params.greenScreen === true}
+                    onChange={(event) =>
+                        onChange({...widget, params: {...widget.params, greenScreen: event.target.checked}})
+                    }
+                />
+                <span className="overlay-check-box" aria-hidden="true" />
+                Greenscreen
+            </label>
+            <p className="overlay-settings-hint">
+                Färbt nur die Content-Fläche grün (#00FF00). Speichern übernimmt den Modus in OBS.
             </p>
-            <WindowObsSettings key={widget.id} widget={widget} onChange={onChange} />
         </>
     )
 }

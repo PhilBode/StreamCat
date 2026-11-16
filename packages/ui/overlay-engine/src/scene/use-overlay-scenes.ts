@@ -166,6 +166,40 @@ export function useOverlayScenes(basePath: string, request: OverlayRequest) {
         })
     }
 
+    async function deleteScene(id: string): Promise<boolean> {
+        const target = scenes.find((scene) => scene.id === id)
+        if (!target || busy) return false
+        setBusy("rename")
+        setError(null)
+        setNotice(null)
+        const controller = lifetime.current
+        try {
+            if (!controller || controller.signal.aborted) return false
+            await request(`${path}/scenes/${encodeURIComponent(id)}`, {method: "DELETE", signal: controller.signal})
+            if (controller.signal.aborted) return false
+            const remaining = scenes.filter((scene) => scene.id !== id)
+            setScenes(remaining)
+            setLinks((current) => {
+                const next = {...current}
+                delete next[id]
+                return next
+            })
+            if (overlay?.id === id) {
+                const next = remaining[0] ?? null
+                setOverlay(next)
+                resetLayout(next?.layout ?? null)
+                if (next) rememberScene(next.id)
+            }
+            setNotice(`Szene „${target.name}“ gelöscht.`)
+            return true
+        } catch (cause) {
+            if (!controller?.signal.aborted) reportError(cause)
+            return false
+        } finally {
+            if (controller && !controller.signal.aborted) setBusy(null)
+        }
+    }
+
     return {
         overlay,
         scenes,
@@ -187,6 +221,7 @@ export function useOverlayScenes(basePath: string, request: OverlayRequest) {
         createScene,
         saveScene,
         rotateScene,
-        renameScene
+        renameScene,
+        deleteScene
     }
 }

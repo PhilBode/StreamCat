@@ -33,13 +33,18 @@ const config: NextConfig = {
                     {key: "Content-Security-Policy", value: policy},
                     {key: "X-Frame-Options", value: "DENY"},
                     {key: "X-Content-Type-Options", value: "nosniff"},
-                    {key: "Referrer-Policy", value: "no-referrer"}
+                    {key: "Referrer-Policy", value: "no-referrer"},
+                    ...(development
+                        ? [
+                              {key: "Cache-Control", value: "no-store, must-revalidate"},
+                              {key: "Pragma", value: "no-cache"}
+                          ]
+                        : [])
                 ]
             }
         ]
     },
     async rewrites() {
-        // Local media handlers run first; other API and callback requests reach the bot.
         return {
             fallback: [
                 {source: "/api/backend/:path*", destination: `${backend}/:path*`},

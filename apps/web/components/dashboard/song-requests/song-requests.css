@@ -15,7 +15,6 @@
     gap: var(--space-1);
     min-width: 0;
 }
-
 .song-requests-title-text {
     color: var(--color-ink);
     font-size: var(--text-title);
@@ -46,6 +45,7 @@
     color: var(--color-danger);
 }
 
+/* Controls: reward dropdown 280 wide + !sr checkbox. */
 .song-requests-controls {
     display: flex;
     align-items: flex-end;
@@ -55,12 +55,6 @@
 }
 .song-requests-controls .dropdown {
     width: 280px;
-}
-.song-requests-footer {
-    margin: 0;
-    color: var(--color-muted);
-    font-size: var(--text-xs);
-    line-height: 1.7;
 }
 .song-requests-skeleton {
     min-height: 64px;
@@ -75,7 +69,6 @@
         opacity: 0.4;
     }
 }
-
 .song-queue {
     display: flex;
     flex-direction: column;

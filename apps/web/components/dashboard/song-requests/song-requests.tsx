@@ -150,13 +150,6 @@ export function SongRequests({guildId}: {guildId: string}) {
                             Songs per !sr annehmen
                         </Checkbox>
                     </div>
-                    <p className="song-requests-footer" role="status">
-                        {pending
-                            ? "Wird gespeichert …"
-                            : settings?.enabled === false
-                              ? "Chat und Kanalpunkte pausiert. Songs in der Queue laufen weiter."
-                              : "Änderungen werden automatisch gespeichert. Songs in der Queue laufen weiter."}
-                    </p>
                     <div className="panel-rule" aria-hidden="true" />
                     {settings?.channelId && <QueueAccordion guildId={guildId} />}
                 </>

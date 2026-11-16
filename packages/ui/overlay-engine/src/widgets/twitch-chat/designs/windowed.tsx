@@ -8,8 +8,7 @@ type TwitchChatWidget = Extract<EditorWidget, {type: "TWITCH_CHAT"}>
 
 export const twitchChatWindowedControls = [
     {key: "color", label: "Textfarbe"},
-    {key: "backgroundColor", label: "Hintergrund"},
-    {key: "--window-bg", label: "Fensterleiste"}
+    {key: "backgroundColor", label: "Hintergrund"}
 ] as const satisfies readonly WidgetColorControl[]
 
 export function TwitchChatWindowedDesign({widget, chat, interactive, title}: WidgetRenderProps) {

@@ -29,6 +29,7 @@ export function FollowedStreamers({guildId}: {guildId: string}) {
 
 function FollowedStreamerList({guildId}: {guildId: string}) {
     const [streamers, setStreamers] = useState<FollowedTwitchStreamer[] | null>(null)
+    const [ownChannel, setOwnChannel] = useState<string | null>(null)
     const [username, setUsername] = useState("")
     const [saving, setSaving] = useState(false)
     const [error, setError] = useTemporaryMessage()
@@ -44,8 +45,21 @@ function FollowedStreamerList({guildId}: {guildId: string}) {
                 if (!abort.signal.aborted)
                     setError(cause instanceof Error ? cause.message : "Kanäle konnten nicht geladen werden.")
             })
+        void apiRequest<{twitch: {username: string} | null}>(
+            `/dashboard/guilds/${encodeURIComponent(guildId)}/connections`,
+            {signal: abort.signal},
+            ""
+        )
+            .then((connections) => {
+                if (!abort.signal.aborted) setOwnChannel(connections.twitch?.username ?? null)
+            })
+            .catch(() => {})
         return () => abort.abort()
-    }, [path, setError])
+    }, [path, guildId, setError])
+
+    const visible = (streamers ?? []).filter(
+        (streamer) => streamer.username.toLowerCase() !== ownChannel?.toLowerCase()
+    )
 
     async function add(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
@@ -115,12 +129,12 @@ function FollowedStreamerList({guildId}: {guildId: string}) {
             {loading ? (
                 <div className="followed-streamers-skeleton" role="status" aria-label="Kanäle werden geladen" />
             ) : (
-                <Accordion label={`Gefolgte Kanäle · ${streamers?.length ?? 0}`}>
+                <Accordion label={`Gefolgte Kanäle · ${visible.length}`}>
                     <div className="followed-streamers-list">
-                        {streamers && streamers.length === 0 && (
+                        {streamers && visible.length === 0 && (
                             <p className="followed-streamers-hint">Noch keine Kanäle gefolgt.</p>
                         )}
-                        {streamers?.map((streamer) => (
+                        {visible.map((streamer) => (
                             <div className="followed-streamers-row" key={streamer.channelId}>
                                 <ProfileAvatar src={streamer.profilePictureUrl} name={streamer.displayName} />
                                 <div className="followed-streamers-text">

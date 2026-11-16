@@ -2,6 +2,7 @@
 
 import Image from "next/image"
 import {useState} from "react"
+import "./profile-avatar.css"
 
 export function ProfileAvatar({src, name}: {src?: string | null; name: string}) {
     const [failed, setFailed] = useState(false)

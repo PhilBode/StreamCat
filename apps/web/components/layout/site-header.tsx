@@ -1,3 +1,4 @@
+import Link from "next/link"
 import {headers} from "next/headers"
 import type {DashboardUser} from "@streamcat/interfaces"
 import {backendUrl} from "../../lib/backend"
@@ -30,14 +31,16 @@ export async function SiteHeader({context}: {context: HeaderContext}) {
     return (
         <header className="site-header">
             <div className="site-header-brand">
-                <span className="site-header-logo" aria-hidden="true">
-                    ᓚ₍ ^. .^₎
-                </span>
-                <span className="site-header-name">StreamCat</span>
-                <span className="site-header-separator" aria-hidden="true">
-                    /
-                </span>
-                <span className="site-header-path">{context.path}</span>
+                <Link className="site-header-brand-link" href="/dashboard">
+                    <span className="site-header-logo" aria-hidden="true">
+                        ᓚ₍ ^. .^₎
+                    </span>
+                    <span className="site-header-name">StreamCat</span>
+                    <span className="site-header-separator" aria-hidden="true">
+                        /
+                    </span>
+                    <span className="site-header-path">{context.path}</span>
+                </Link>
                 <span className="site-header-rule" aria-hidden="true" />
                 <span className="site-header-label">{context.label}</span>
             </div>

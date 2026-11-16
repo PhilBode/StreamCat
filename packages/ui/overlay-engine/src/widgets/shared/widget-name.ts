@@ -2,6 +2,7 @@ import {isMediaWidget, type EditorWidget, type OverlayAsset} from "@streamcat/in
 import {widgetModule} from "../registry"
 
 export function widgetName(widget: EditorWidget, assets: OverlayAsset[] = []) {
+    if (widget.label) return widget.label
     const name = widgetModule(widget.type).label
     if (widget.type === "WINDOW" && widget.params.title && widget.params.title !== name)
         return `${name} · ${widget.params.title}`

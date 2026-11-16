@@ -8,7 +8,6 @@ type SpotifyWidgetType = Extract<EditorWidget, {type: "SPOTIFY_NOW_PLAYING"}>
 export const spotifyArtworkControls = [
     {key: "color", label: "Textfarbe"},
     {key: "backgroundColor", label: "Hintergrund"},
-    {key: "--window-bg", label: "Fensterleiste"},
     {key: "--progress-color", label: "Fortschritt"}
 ] as const satisfies readonly WidgetColorControl[]
 
