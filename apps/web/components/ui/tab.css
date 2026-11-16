@@ -1,0 +1,44 @@
+.tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    min-width: 175px;
+    height: 36px;
+    padding: 0 24px;
+    border: 0;
+    background: var(--color-paper-2);
+    color: var(--color-ink-2);
+    font-family: inherit;
+    font-size: var(--text-md);
+    line-height: 1;
+    cursor: pointer;
+}
+.tab:hover:not(:disabled) {
+    background: var(--color-paper-3);
+    color: var(--color-ink);
+}
+.tab[aria-selected="true"],
+.tab--active {
+    background: var(--color-accent-wash);
+    color: var(--color-ink);
+}
+.tab:disabled {
+    background: var(--color-paper-3);
+    color: var(--color-muted);
+    cursor: default;
+}
+.tab-prefix {
+    color: var(--color-ink);
+}
+.tab-indicator {
+    position: absolute;
+    inset: auto 0 0 0;
+    height: 2px;
+    background: var(--color-accent);
+}
+.tab:focus-visible {
+    outline: 1px solid var(--color-focus);
+    outline-offset: 1px;
+}
