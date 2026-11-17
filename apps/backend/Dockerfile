@@ -9,6 +9,7 @@ COPY apps/web/package.json ./apps/web/
 COPY packages/core/package.json ./packages/core/
 COPY packages/db/package.json ./packages/db/
 COPY packages/interfaces/package.json ./packages/interfaces/
+COPY packages/ui/overlay-engine/package.json ./packages/ui/overlay-engine/
 RUN bun install --frozen-lockfile --production --ignore-scripts --filter @streamcat/backend --filter @streamcat/db
 
 COPY apps/backend/src ./apps/backend/src
