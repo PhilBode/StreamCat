@@ -587,9 +587,6 @@ function OverlaySession({
                             </div>
                         </aside>
                     </div>
-                    <div className="overlay-hintbar">
-                        Ziehen zum Verschieben · STRG + Z Zurück · CTRL + SHIFT + Z Vorwärts
-                    </div>
                 </>
             )}
             {overlay && layout && (

@@ -1322,19 +1322,6 @@
     border: 1px solid var(--color-rule-2);
 }
 
-.overlay-hintbar {
-    flex: none;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 25px;
-    border-top: 1px solid var(--color-rule);
-    background: var(--color-paper-2);
-    color: var(--color-muted);
-    font-size: 11px;
-    line-height: 1;
-}
-
 .overlay-asset span {
     display: block;
     overflow: hidden;
