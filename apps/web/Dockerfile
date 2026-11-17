@@ -6,10 +6,12 @@ COPY apps/backend/package.json ./apps/backend/
 COPY packages/core/package.json ./packages/core/
 COPY packages/db/package.json ./packages/db/
 COPY packages/interfaces/package.json ./packages/interfaces/
+COPY packages/ui/overlay-engine/package.json ./packages/ui/overlay-engine/
 RUN bun install --frozen-lockfile --ignore-scripts --filter @streamcat/web
 COPY apps/web ./apps/web
 COPY packages/core/src ./packages/core/src
 COPY packages/interfaces/src ./packages/interfaces/src
+COPY packages/ui/overlay-engine/src ./packages/ui/overlay-engine/src
 COPY scripts/build-version.ts ./scripts/
 # Rewrites are compiled into the image; Docker always uses this service name.
 ENV BACKEND_URL=http://backend:3002 NEXT_TELEMETRY_DISABLED=1
