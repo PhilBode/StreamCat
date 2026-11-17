@@ -336,6 +336,12 @@ function OverlaySession({
                     }}
                 />
             )}
+            {!loading && !error && !overlay && (
+                <div className="overlay-empty-state">
+                    <p>Noch keine Szene vorhanden.</p>
+                    <p>Erstelle die erste mit dem + oben links.</p>
+                </div>
+            )}
             {overlay && layout && (
                 <>
                     {pendingScene && (
@@ -589,15 +595,15 @@ function OverlaySession({
                     </div>
                 </>
             )}
+            {createDialog && (
+                <NewSceneDialog
+                    busy={!!busy}
+                    onClose={() => setCreateDialog(false)}
+                    onCreate={(name, scene, theme, font) => void createWithTheme(name, scene, theme, font)}
+                />
+            )}
             {overlay && layout && (
                 <>
-                    {createDialog && (
-                        <NewSceneDialog
-                            busy={!!busy}
-                            onClose={() => setCreateDialog(false)}
-                            onCreate={(name, scene, theme, font) => void createWithTheme(name, scene, theme, font)}
-                        />
-                    )}
                     {sceneDeleteOpen && overlay && (
                         <DeleteDialog
                             selected={overlay}
