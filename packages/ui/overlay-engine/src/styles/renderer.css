@@ -272,7 +272,7 @@
     position: absolute;
     left: 96px;
     top: 54px;
-    color: #ffffff;
+    color: var(--scene-text, #ffffff);
     font-size: 134.4px;
     font-weight: bold;
     filter: drop-shadow(-9.6px 10.8px 5px #00000080);
@@ -306,7 +306,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0 20px;
-    color: #ffffff;
+    color: var(--scene-text, #ffffff);
     background: var(--window-bg);
     font-size: 27px;
 }
@@ -327,6 +327,11 @@
 .overlay-theme-light .overlay-scene-title,
 .overlay-theme-light .overlay-taskbar {
     color: #171821;
+}
+
+.overlay-renderer[style*="--scene-text"] .overlay-scene-title,
+.overlay-renderer[style*="--scene-text"] .overlay-taskbar {
+    color: var(--scene-text);
 }
 @media (prefers-reduced-motion: reduce) {
     .overlay-gradient,

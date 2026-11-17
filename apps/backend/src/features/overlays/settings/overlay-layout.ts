@@ -62,6 +62,18 @@ function designColors(value: unknown): Record<`--${string}`, string> | undefined
     return Object.keys(colors).length ? (colors as Record<`--${string}`, string>) : undefined
 }
 
+function themeColors(value: unknown): OverlayLayout["themeColors"] {
+    if (value === undefined) return undefined
+    const data = object(value)
+    const keys = ["primary", "secondary", "surface", "window", "text"] as const
+    const colors: NonNullable<OverlayLayout["themeColors"]> = {}
+    for (const key of keys) {
+        if (data[key] === undefined) continue
+        colors[key] = color(data[key])
+    }
+    return Object.keys(colors).length ? colors : undefined
+}
+
 function widgetDesign(value: unknown, fallback: WidgetDesignId): WidgetDesignId {
     if (value === undefined) return fallback
     if (isWidgetDesignId(value)) return value
@@ -176,7 +188,10 @@ export function validateOverlayLayout(input: unknown): OverlayLayout {
             (typeof params.audioDeviceName !== "string" || params.audioDeviceName.length > 200)
         )
             throw new BadRequestException("Ungültiger Audioeingang.")
-        const geometry = {id: widget.id, x, y, width, height, zIndex}
+        const label =
+            typeof widget.label === "string" && widget.label.trim() ? widget.label.trim().slice(0, 80) : undefined
+        const hidden = widget.hidden === true ? true : undefined
+        const geometry = {id: widget.id, x, y, width, height, zIndex, label, hidden}
         const colors = designColors(params.designColors)
         const appearance = {
             design: widgetDesign(params.design, theme),
@@ -248,6 +263,7 @@ export function validateOverlayLayout(input: unknown): OverlayLayout {
         width: OVERLAY_WIDTH,
         height: OVERLAY_HEIGHT,
         theme,
+        themeColors: themeColors(data.themeColors),
         scene: scene as OverlayScene,
         font: font as OverlayFont,
         socials,

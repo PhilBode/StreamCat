@@ -1,0 +1,32 @@
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    height: 24px;
+    padding: 0 8px;
+    background: var(--color-paper-3);
+    border: 1px solid var(--color-rule);
+    color: var(--color-ink-2);
+    font-size: var(--text-xs);
+    line-height: 1;
+    white-space: nowrap;
+}
+.status-pill-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--color-rule-2);
+}
+.status-pill--connected .status-pill-dot,
+.status-pill--online .status-pill-dot {
+    background: var(--color-live);
+}
+.status-pill--error .status-pill-dot {
+    background: var(--color-danger);
+}
+.status-pill--offline .status-pill-dot {
+    background: #ffcc00;
+}
+.status-pill--neutral {
+    color: var(--color-muted);
+}

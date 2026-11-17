@@ -30,6 +30,11 @@ export class OverlayRepository {
         return this.prisma.overlay.findUnique({where: {id: sceneId, guildId}, include: widgetsInLayerOrder})
     }
 
+    async deleteScene(guildId: string, sceneId: string): Promise<boolean> {
+        const deleted = await this.prisma.overlay.deleteMany({where: {id: sceneId, guildId}})
+        return deleted.count > 0
+    }
+
     async createScene(
         guildId: string,
         name: string,

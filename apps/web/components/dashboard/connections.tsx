@@ -1,25 +1,32 @@
 "use client"
 
 import {useEffect, useState, type FormEvent} from "react"
-import type {DashboardConnections} from "@streamcat/interfaces"
+import type {DashboardConnections, SpotifyPlaybackState} from "@streamcat/interfaces"
 import {apiRequest, postJson} from "../../lib/api"
-import {SongRequests} from "./song-requests/song-requests"
-import {ConnectionSkeleton} from "./dashboard-skeleton"
+import {Accordion} from "../ui/accordion"
+import {Button} from "../ui/button"
+import {StatusPill} from "../ui/status-pill"
+import {TextInput} from "../ui/text-input"
 import {ProfileAvatar} from "./profile-avatar"
+import "./connections.css"
+
+const SONG_POLL_MS = 15_000
 
 export function Connections({guildId}: {guildId: string}) {
     const [connections, setConnections] = useState<DashboardConnections | null>(null)
+    const [playback, setPlayback] = useState<SpotifyPlaybackState | null>(null)
     const [clientId, setClientId] = useState("")
     const [secret, setSecret] = useState("")
     const [busy, setBusy] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [notice, setNotice] = useState<string | null>(null)
+    const path = `/dashboard/guilds/${encodeURIComponent(guildId)}`
 
     useEffect(() => {
         const abort = new AbortController()
         const query = new URLSearchParams(window.location.search)
         void apiRequest<DashboardConnections>(
-            `/dashboard/guilds/${encodeURIComponent(guildId)}/connections`,
+            `${path}/connections`,
             {signal: abort.signal},
             "Konten konnten nicht geladen werden."
         )
@@ -36,14 +43,38 @@ export function Connections({guildId}: {guildId: string}) {
                     setError(cause instanceof Error ? cause.message : "Konten konnten nicht geladen werden.")
             })
         return () => abort.abort()
-    }, [guildId])
+    }, [path])
+
+    useEffect(() => {
+        if (!connections?.spotify) return
+        const abort = new AbortController()
+        let timeout: ReturnType<typeof setTimeout> | undefined
+        async function poll() {
+            try {
+                const data = await apiRequest<{playback: SpotifyPlaybackState}>(
+                    `${path}/overlay/preview`,
+                    {signal: abort.signal},
+                    ""
+                )
+                if (!abort.signal.aborted) setPlayback(data.playback)
+            } catch {
+                
+            }
+            if (!abort.signal.aborted) timeout = setTimeout(() => void poll(), SONG_POLL_MS)
+        }
+        void poll()
+        return () => {
+            abort.abort()
+            clearTimeout(timeout)
+        }
+    }, [path, connections?.spotify])
 
     async function connect(provider: "twitch" | "spotify") {
         setBusy(true)
         setError(null)
         try {
             const data = await apiRequest<{url: string}>(
-                `/dashboard/guilds/${encodeURIComponent(guildId)}/connections/${provider}`,
+                `${path}/connections/${provider}`,
                 postJson(provider === "spotify" ? {clientId, clientSecret: secret} : {}),
                 "Die Anmeldung konnte nicht gestartet werden."
             )
@@ -55,122 +86,98 @@ export function Connections({guildId}: {guildId: string}) {
         }
     }
 
+    async function unlink(provider: "twitch" | "spotify") {
+        setBusy(true)
+        setError(null)
+        try {
+            await apiRequest(
+                `${path}/connections/${provider}`,
+                {method: "DELETE"},
+                "Die Verbindung konnte nicht aufgehoben werden."
+            )
+            setConnections((current) => (current ? {...current, [provider]: null} : current))
+            if (provider === "spotify") setPlayback(null)
+            setNotice("Die Verbindung wurde aufgehoben.")
+        } catch (cause) {
+            setError(cause instanceof Error ? cause.message : "Die Verbindung konnte nicht aufgehoben werden.")
+        } finally {
+            setBusy(false)
+        }
+    }
+
     function spotifySubmit(event: FormEvent<HTMLFormElement>) {
         event.preventDefault()
         void connect("spotify")
     }
 
     const loading = !connections && !error
-
-    function status(connected: boolean) {
-        const label = connections ? (connected ? "Verknüpft" : "Nicht eingerichtet") : "Nicht verfügbar"
-        return <span className={`status-pill ${connected ? "connected" : "neutral"}`}>{label}</span>
-    }
-
-    function accountName(username?: string) {
-        if (!connections) return "Status unbekannt"
-        return username || "Noch kein Konto"
-    }
+    const song = playback?.status === "playing" || playback?.status === "paused" ? playback.text : null
 
     return (
-        <section className="connections" aria-labelledby="connections-title">
-            <div className="section-heading">
-                <div>
-                    <h2 id="connections-title">Verbundene Konten</h2>
-                    <p className="muted">Deine Twitch- und Spotify-Verbindung für diesen Server</p>
-                </div>
-            </div>
-            {notice && (
-                <p className="notice success" role="status">
-                    {notice}
-                </p>
-            )}
-            {error && (
-                <div className="notice error" role="alert">
-                    <strong>Verbindungen konnten nicht aktualisiert werden</strong>
-                    <p>{error}</p>
-                </div>
-            )}
-            <div
-                className="connection-grid"
-                role={loading ? "status" : undefined}
-                aria-label={loading ? "Verbundene Konten werden geladen" : undefined}
-            >
-                {loading ? (
-                    <>
-                        <ConnectionSkeleton />
-                        <ConnectionSkeleton />
-                    </>
-                ) : (
-                    <>
-                        <section className="panel connection-card">
-                            <div className="connection-heading">
-                                <ProfileAvatar
-                                    src={
-                                        connections?.twitch
-                                            ? `/api/backend/dashboard/guilds/${encodeURIComponent(guildId)}/connections/twitch/avatar`
-                                            : null
-                                    }
-                                    name={connections?.twitch?.username || "Twitch"}
-                                />
-                                <div>
-                                    <h3>Twitch</h3>
-                                    <p className="muted">Dein Streaming-Konto</p>
-                                </div>
-                                {status(!!connections?.twitch)}
-                            </div>
-                            <div className="account-summary">
-                                <p className="field-caption">Verknüpftes Konto</p>
-                                <strong>{accountName(connections?.twitch?.username)}</strong>
-                                <p className="muted">
-                                    {connections?.twitch
-                                        ? "Dieses Konto ist für deinen Server gespeichert."
-                                        : "Verbinde dein Konto für Twitch-Funktionen auf diesem Server."}
-                                </p>
-                            </div>
-                            <div className="connection-footer">
-                                <button
-                                    className="button twitch-button"
-                                    disabled={busy || !connections}
-                                    onClick={() => void connect("twitch")}
-                                >
-                                    {busy
-                                        ? "Anmeldung startet …"
-                                        : connections?.twitch
-                                          ? "Neu verbinden"
-                                          : "Twitch verbinden"}
-                                </button>
-                            </div>
-                        </section>
-                        <section className="panel connection-card">
-                            <div className="connection-heading">
-                                <ProfileAvatar
-                                    src={
-                                        connections?.spotify
-                                            ? `/api/backend/dashboard/guilds/${encodeURIComponent(guildId)}/connections/spotify/avatar`
-                                            : null
-                                    }
-                                    name={connections?.spotify?.username || "Spotify"}
-                                />
-                                <div>
-                                    <h3>Spotify</h3>
-                                    <p className="muted">Musik & Song Requests</p>
-                                </div>
-                                {status(!!connections?.spotify)}
-                            </div>
-                            <div className="account-summary">
-                                <p className="field-caption">Verknüpftes Konto</p>
-                                <strong>{accountName(connections?.spotify?.username)}</strong>
-                                <p className="muted">Verwende die Zugangsdaten deiner eigenen Spotify-App.</p>
-                            </div>
-                            <details className="spotify-settings" open={connections ? !connections.spotify : false}>
-                                <summary>
-                                    {connections?.spotify ? "Zugangsdaten & erneut verbinden" : "Spotify einrichten"}
-                                </summary>
+        <div
+            className="connections"
+            role={loading ? "status" : undefined}
+            aria-label={loading ? "Verbundene Konten werden geladen" : undefined}
+        >
+            {loading ? (
+                <>
+                    <div className="panel connection-card connection-card-skeleton" aria-hidden="true" />
+                    <div className="panel connection-card connection-card-skeleton" aria-hidden="true" />
+                </>
+            ) : (
+                <>
+                    {notice && (
+                        <p className="connections-note" role="status">
+                            {notice}
+                        </p>
+                    )}
+                    {error && (
+                        <div className="connections-note connections-note--error" role="alert">
+                            <strong>Verbindungen konnten nicht aktualisiert werden</strong>
+                            <p>{error}</p>
+                        </div>
+                    )}
+                    <ConnectionCard
+                        provider="twitch"
+                        title="Twitch"
+                        subtitle="Dein Streaming-Konto"
+                        connected={!!connections?.twitch}
+                        avatarSrc={connections?.twitch ? `/api/backend${path}/connections/twitch/avatar` : null}
+                        accountName={connections?.twitch?.username}
+                        description={
+                            connections?.twitch
+                                ? "Dieses Konto ist für deinen Server gespeichert."
+                                : "Verbinde dein Konto, um Song Requests, Stream-Benachrichtigungen und Overlays auf diesem Server zu nutzen."
+                        }
+                        connectLabel="Twitch verbinden"
+                        busy={busy}
+                        onConnect={() => void connect("twitch")}
+                        onUnlink={() => void unlink("twitch")}
+                        song={null}
+                    />
+                    <ConnectionCard
+                        provider="spotify"
+                        title="Spotify"
+                        subtitle="Musik & Song Requests"
+                        connected={!!connections?.spotify}
+                        avatarSrc={connections?.spotify ? `/api/backend${path}/connections/spotify/avatar` : null}
+                        accountName={connections?.spotify?.username}
+                        description={
+                            connections?.spotify
+                                ? "Verwende die Zugangsdaten deiner eigenen Spotify-App."
+                                : "Verbinde dein Konto, um Song Requests und den aktuellen Song im Overlay zu nutzen."
+                        }
+                        connectLabel="Spotify verbinden"
+                        busy={busy}
+                        onConnect={() => void connect("spotify")}
+                        onUnlink={() => void unlink("spotify")}
+                        song={song}
+                    >
+                        {connections && !connections.spotify && (
+                            <Accordion label="Zugangsdaten">
                                 <form onSubmit={spotifySubmit} className="connection-form">
-                                    <label htmlFor="spotify-client-id">Client-ID</label>
-                                    <input
-                                        id="spotify-client-id"
+                                    <TextInput
+                                        label="Client-ID"
                                         placeholder="Client-ID deiner Spotify-App"
                                         value={clientId}
                                         onChange={(event) => setClientId(event.target.value)}
@@ -178,47 +185,110 @@ export function Connections({guildId}: {guildId: string}) {
                                         pattern="[a-fA-F0-9]{32}"
                                         maxLength={32}
                                         autoComplete="off"
-                                        disabled={busy || !connections}
+                                        disabled={busy}
                                     />
-                                    <label htmlFor="spotify-client-secret">Client Secret</label>
-                                    <input
-                                        id="spotify-client-secret"
-                                        type="password"
-                                        placeholder={
-                                            connections?.spotify
-                                                ? "Gespeichertes Secret verwenden"
-                                                : "Client Secret deiner Spotify-App"
-                                        }
+                                    <TextInput
+                                        label="Client Secret"
+                                        secret
+                                        placeholder="Client Secret deiner Spotify-App"
                                         value={secret}
                                         onChange={(event) => setSecret(event.target.value)}
-                                        required={!connections?.spotify}
+                                        required
                                         minLength={16}
                                         maxLength={64}
                                         autoComplete="new-password"
-                                        disabled={busy || !connections}
+                                        disabled={busy}
                                     />
-                                    {connections?.spotify && (
-                                        <p className="muted form-hint">
-                                            Bei gleicher Client-ID kannst du das Secret leer lassen.
-                                        </p>
-                                    )}
-                                    <button className="button primary" disabled={busy || !connections} type="submit">
-                                        {busy
-                                            ? "Anmeldung startet …"
-                                            : connections?.spotify
-                                              ? "Spotify neu verbinden"
-                                              : "Spotify verbinden"}
-                                    </button>
+                                    <Button type="submit" disabled={busy}>
+                                        {busy ? "Anmeldung startet …" : "Spotify verbinden"}
+                                    </Button>
                                 </form>
-                            </details>
-                        </section>
-                    </>
+                            </Accordion>
+                        )}
+                    </ConnectionCard>
+                </>
+            )}
+        </div>
+    )
+}
+
+type ConnectionCardProps = {
+    provider: "twitch" | "spotify"
+    title: string
+    subtitle: string
+    connected: boolean
+    avatarSrc: string | null
+    accountName?: string
+    description: string
+    connectLabel: string
+    busy: boolean
+    onConnect: () => void
+    onUnlink: () => void
+    song: string | null
+    children?: React.ReactNode
+}
+
+function ConnectionCard({
+    provider,
+    title,
+    subtitle,
+    connected,
+    avatarSrc,
+    accountName,
+    description,
+    connectLabel,
+    busy,
+    onConnect,
+    onUnlink,
+    song,
+    children
+}: ConnectionCardProps) {
+    return (
+        <section className="panel connection-card">
+            <div className="connection-heading">
+                <div className="connection-identity">
+                    <ProfileAvatar src={avatarSrc} name={title} />
+                    <div className="connection-identity-text">
+                        <span className="connection-title">{title}</span>
+                        <span className="connection-subtitle">{subtitle}</span>
+                    </div>
+                </div>
+                <StatusPill state={connected ? "connected" : "neutral"}>{connected ? "Verknüpft" : "Offen"}</StatusPill>
+            </div>
+            <div className="panel-rule" aria-hidden="true" />
+            {connected ? (
+                <div className="connection-stats">
+                    <div className="connection-stat">
+                        <span className="connection-stat-label">Konto</span>
+                        <span className="connection-stat-value">{accountName ? `@${accountName}` : "Konto"}</span>
+                    </div>
+                    {song !== null && (
+                        <div className="connection-stat connection-stat--fill">
+                            <span className="connection-stat-label">Song</span>
+                            <span className="connection-stat-value">{song}</span>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="connection-body">
+                    <span className="connection-account">Noch kein Konto</span>
+                    <p className="connection-description">{description}</p>
+                </div>
+            )}
+            {children}
+            <div className="connection-footer">
+                {connected ? (
+                    <Button typeVariant="danger" disabled={busy} onClick={onUnlink}>
+                        Verbindung aufheben
+                    </Button>
+                ) : (
+                    provider !== "spotify" && (
+                        <Button typeVariant="primary" disabled={busy} onClick={onConnect}>
+                            {busy ? "Anmeldung startet …" : connectLabel}
+                        </Button>
+                    )
                 )}
             </div>
-            <p className="connection-note">
-                Verknüpft zeigt ein gespeichertes Konto. Der aktuelle Sessionstatus wird hier noch nicht geprüft.
-            </p>
-            <SongRequests guildId={guildId} />
         </section>
     )
 }

@@ -1,0 +1,62 @@
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    height: 50px;
+    padding: 0 20px;
+    background: var(--color-paper-2);
+    border-bottom: 1px solid var(--color-rule);
+}
+.site-header-brand {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+.site-header-brand-link {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+    text-decoration: none;
+}
+.site-header-logo,
+.site-header-name {
+    color: var(--color-ink);
+    font-size: var(--text-md);
+    line-height: 1;
+    white-space: nowrap;
+}
+.site-header-separator,
+.site-header-path,
+.site-header-label {
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+    line-height: 1;
+    white-space: nowrap;
+}
+.site-header-rule {
+    width: 1px;
+    height: 20px;
+    background: var(--color-rule);
+    flex: none;
+}
+.site-header-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.site-header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+.site-header-login {
+    color: var(--color-ink-2);
+    font-size: var(--text-xs);
+    line-height: 1.7;
+    text-decoration: none;
+}
+.site-header-login:hover {
+    color: var(--color-ink);
+}

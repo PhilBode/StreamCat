@@ -122,6 +122,12 @@ export class OverlayService {
         return this.toDashboard(renamed)
     }
 
+    async deleteScene(guildId: string, overlayId: string): Promise<void> {
+        await this.requireScene(guildId, overlayId)
+        await this.repository.deleteScene(guildId, overlayId)
+        this.logger.info(`Overlay scene deleted guild=${guildId} overlay=${overlayId}`)
+    }
+
     async chat(guildId: string): Promise<OverlayChat> {
         const auth = await this.twitchAuth.findIdentityByGuildId(guildId)
         if (!auth) return {channel: null, url: null}

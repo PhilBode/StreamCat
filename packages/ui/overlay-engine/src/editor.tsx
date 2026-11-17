@@ -8,7 +8,10 @@ import {
     type OverlayChat,
     type OverlayPlayback,
     type OverlayAsset,
-    type OverlayLayout
+    type OverlayLayout,
+    type OverlayFont,
+    type OverlayScene,
+    type OverlayTheme
 } from "@streamcat/interfaces"
 import {isAuthError, type OverlayRequest} from "./api/transport"
 import {useStableRequest} from "./api/use-stable-request"
@@ -16,15 +19,19 @@ import {OverlayCanvas, type OverlaySelection} from "./canvas"
 import {EMPTY_PLAYBACK} from "./renderer"
 import {WidgetSettings} from "./widgets/settings"
 import {SceneControls} from "./scene/scene-controls"
-import {SceneSettings} from "./scene/scene-settings"
-import {ObsLink} from "./scene/obs-link"
-import {AssetLibrary} from "./assets/asset-library"
+import {Dialog, SidebarSection} from "./ui/dialog"
+import {CloseIcon} from "./ui/icons"
+import {NewSceneDialog} from "./scene/new-scene-dialog"
+import {SceneSidebar} from "./scene/scene-settings"
+import {DeleteDialog} from "./scene/scene-controls"
+import {AddDialog} from "./assets/add-dialog"
 import {useOverlayAssets} from "./assets/use-overlay-assets"
 import {WidgetLayers, moveWidgetToBackground} from "./widgets/shared/widget-layers"
 import {WIDGET_CATALOG_TYPES, widgetModule, type AddableWidgetType} from "./widgets/registry"
 import {useOverlayScenes} from "./scene/use-overlay-scenes"
 import {isGroupedField} from "./history/use-layout-history"
 import {EditorSkeleton} from "./editor-skeleton"
+import {EditorTab} from "./ui/dialog"
 
 const EMPTY_CHAT: OverlayChat = {channel: null, url: null}
 
@@ -62,7 +69,8 @@ function OverlaySession({
         createScene,
         saveScene,
         rotateScene,
-        renameScene
+        renameScene,
+        deleteScene
     } = useOverlayScenes(basePath, request)
     const {layout, setLayout} = history
     const [selection, setSelection] = useState<OverlaySelection>(null)
@@ -71,8 +79,25 @@ function OverlaySession({
     const [chat, setChat] = useState<OverlayChat>(EMPTY_CHAT)
     const [liveError, setLiveError] = useState<string | null>(null)
     const [previewAudio, setPreviewAudio] = useState(false)
-    const [sidebar, setSidebar] = useState<"widgets" | "design" | "assets">("widgets")
+    const [panelTab, setPanelTab] = useState<"layout" | "properties">("properties")
+    const [addDialog, setAddDialog] = useState<"widgets" | "assets" | null>(null)
+    const [createDialog, setCreateDialog] = useState(false)
+    const [sceneRenaming, setSceneRenaming] = useState(false)
+    const [sceneRenameValue, setSceneRenameValue] = useState("")
+    const [sceneDeleteOpen, setSceneDeleteOpen] = useState(false)
     const media = useOverlayAssets(basePath, request, reportError)
+
+    const overlayPresent = !!overlay
+    useEffect(() => {
+        if (!notice) return
+        const timeout = setTimeout(() => setNotice(null), 6000)
+        return () => clearTimeout(timeout)
+    }, [notice, setNotice])
+    useEffect(() => {
+        if (!error || !overlayPresent) return
+        const timeout = setTimeout(() => setError(null), 6000)
+        return () => clearTimeout(timeout)
+    }, [error, overlayPresent, setError])
 
     const overlayId = overlay?.id
     useEffect(() => {
@@ -136,10 +161,9 @@ function OverlaySession({
 
     function selectItem(item: OverlaySelection) {
         setSelection(item)
-        if (item?.type === "widget") setSidebar("widgets")
     }
 
-    function addLibraryAsset(id: string, x: number, y: number) {
+    async function addLibraryAsset(id: string, x: number, y: number) {
         const asset = media.assets.find((item) => item.id === id)
         if (asset) addAssets([asset], x, y)
     }
@@ -159,10 +183,10 @@ function OverlaySession({
         if (window.confirm(`„${asset.fileName}“ endgültig löschen?`)) void media.removeAsset(asset)
     }
 
-    function addWidget(type: AddableWidgetType) {
+    function addWidget(type: AddableWidgetType, design = "default") {
         if (!layout || layout.widgets.length >= MAX_OVERLAY_WIDGETS) return
         const module = widgetModule(type)
-        const moduleDesign = module.designs[layout.theme] ?? module.designs[module.defaultDesign]
+        const moduleDesign = module.designs[design] ?? module.designs[module.defaultDesign]
         const widget: EditorWidget = {
             id: crypto.randomUUID(),
             type,
@@ -181,6 +205,45 @@ function OverlaySession({
         setLayout({...layout, widgets: [...layout.widgets, widget]})
         setSelection({type: "widget", id: widget.id})
         setNotice(null)
+    }
+
+    function addPlacedAsset(asset: OverlayAsset, asBackground: boolean, fit: "contain" | "cover") {
+        if (!layout || layout.widgets.length >= MAX_OVERLAY_WIDGETS) {
+            setError(`Maximal ${MAX_OVERLAY_WIDGETS} Widgets pro Szene. Entferne zuerst ein Widget.`)
+            return
+        }
+        const id = crypto.randomUUID()
+        const background = asBackground
+            ? {x: 0, y: 0, width: layout.width, height: layout.height, zIndex: 0}
+            : {
+                  x: 120,
+                  y: 120,
+                  width: 480,
+                  height: 270,
+                  zIndex: Math.min(1000, Math.max(0, ...layout.widgets.map((item) => item.zIndex)) + 1)
+              }
+        const widget: EditorWidget = {
+            id,
+            type: asset.kind,
+            ...background,
+            params: {
+                design: layout.theme,
+                color: "#ffffff",
+                backgroundColor: "transparent",
+                assetId: asset.id,
+                fit
+            }
+        }
+        setLayout({...layout, widgets: [...layout.widgets, widget]})
+        setSelection({type: "widget", id})
+        setNotice(null)
+    }
+
+    async function createWithTheme(name: string, scene: OverlayScene, theme: OverlayTheme, font: OverlayFont) {
+        const created = await createScene(name, scene)
+        if (created) {
+            setLayout((current) => (current ? {...current, theme, font} : current))
+        }
     }
 
     function addAssets(assets: OverlayAsset[], x = 120, y = 120) {
@@ -208,7 +271,6 @@ function OverlaySession({
             }))
             return {...current, widgets: [...current.widgets, ...widgets]}
         })
-        if (ids.length) setSidebar("widgets")
         setNotice(null)
     }
 
@@ -224,6 +286,9 @@ function OverlaySession({
 
     const selected = layout?.widgets.find((widget) => widget.id === selectedId)
     const link = overlay ? (links[overlay.id] ?? null) : null
+    const designChoices = selected
+        ? Object.values(widgetModule(selected.type).designs).map((item) => ({value: item.id, label: item.label}))
+        : []
     return (
         <>
             {loading && <EditorSkeleton />}
@@ -244,15 +309,6 @@ function OverlaySession({
                     )}
                 </div>
             )}
-            {overlay && (
-                <ObsLink
-                    key={`${overlay.id}-${link ?? ""}`}
-                    url={link}
-                    busy={!!busy || media.uploading}
-                    onReset={() => void rotateScene()}
-                    onError={setError}
-                />
-            )}
             {!loading && (!error || overlay) && (
                 <SceneControls
                     key={`${overlay?.id ?? "new"}-${overlay?.name ?? ""}`}
@@ -260,10 +316,14 @@ function OverlaySession({
                     selected={overlay}
                     busy={!!busy || media.uploading}
                     dirty={dirty}
+                    obsUrl={link}
                     onSelect={selectScene}
                     onCreate={(name, scene) => void createScene(name, scene)}
-                    onRename={(name) => void renameScene(name)}
                     onSave={() => void saveScene()}
+                    onRotate={() => void rotateScene()}
+                    onDelete={(id) => void deleteScene(id)}
+                    onOpenCreate={() => setCreateDialog(true)}
+                    onError={setError}
                     canUndo={history.canUndo}
                     canRedo={history.canRedo}
                     onUndo={() => {
@@ -279,38 +339,69 @@ function OverlaySession({
             {overlay && layout && (
                 <>
                     {pendingScene && (
-                        <div className="notice overlay-switch-confirm" role="alert">
+                        <Dialog
+                            title="Ungespeicherte Änderungen"
+                            onClose={() => setPendingScene(null)}
+                            footer={
+                                <>
+                                    <button
+                                        type="button"
+                                        className="button"
+                                        disabled={!!busy}
+                                        onClick={() => setPendingScene(null)}
+                                    >
+                                        Hier bleiben
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="button"
+                                        disabled={!!busy || media.uploading}
+                                        onClick={() => openScene(pendingScene)}
+                                    >
+                                        Änderungen verwerfen & wechseln
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="button primary"
+                                        disabled={!!busy || media.uploading}
+                                        onClick={() => void saveAndSwitchScene()}
+                                    >
+                                        Speichern & wechseln
+                                    </button>
+                                </>
+                            }
+                        >
                             <p>Deine Änderungen an „{overlay.name}“ sind noch nicht gespeichert.</p>
-                            <div className="actions">
-                                <button
-                                    className="button primary"
-                                    disabled={!!busy || media.uploading}
-                                    onClick={() => void saveAndSwitchScene()}
+                        </Dialog>
+                    )}
+                    {(notice || liveError) && (
+                        <div className={`overlay-snackbar ${liveError ? "error" : "success"}`} role="status">
+                            <span className="overlay-snackbar-dot" aria-hidden="true" />
+                            <p>{liveError ?? notice}</p>
+                            <button
+                                type="button"
+                                className="overlay-icon-button overlay-icon-button--sm"
+                                aria-label="Meldung schließen"
+                                onClick={() => {
+                                    setNotice(null)
+                                    setLiveError(null)
+                                }}
+                            >
+                                <svg
+                                    aria-hidden="true"
+                                    width="16"
+                                    height="16"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
                                 >
-                                    Speichern & wechseln
-                                </button>
-                                <button
-                                    className="button"
-                                    disabled={!!busy || media.uploading}
-                                    onClick={() => openScene(pendingScene)}
-                                >
-                                    Änderungen verwerfen & wechseln
-                                </button>
-                                <button className="button" disabled={!!busy} onClick={() => setPendingScene(null)}>
-                                    Hier bleiben
-                                </button>
-                            </div>
+                                    <path
+                                        d="M4.9948 3.93414L8.00001 6.93935L11.0052 3.93414L12.0659 4.9948L9.06067 8.00001L12.0659 11.0052L11.0052 12.0659L8.00001 9.06067L4.9948 12.0659L3.93414 11.0052L6.93935 8.00001L3.93414 4.9948L4.9948 3.93414Z"
+                                        fill="currentColor"
+                                    />
+                                </svg>
+                            </button>
                         </div>
-                    )}
-                    {notice && (
-                        <p className="notice success" role="status">
-                            {notice}
-                        </p>
-                    )}
-                    {liveError && (
-                        <p className="notice error" role="status">
-                            {liveError}
-                        </p>
                     )}
                     <div
                         className="overlay-workspace"
@@ -326,109 +417,7 @@ function OverlaySession({
                             if (event.key.startsWith("Arrow") && !isGroupedField(event.target)) history.end()
                         }}
                     >
-                        <aside className="panel overlay-sidebar">
-                            <div className="overlay-sidebar-tabs" role="tablist" aria-label="Overlay-Werkzeuge">
-                                {(["widgets", "design", "assets"] as const).map((tab) => (
-                                    <button
-                                        key={tab}
-                                        className={`button ${sidebar === tab ? "selected" : ""}`}
-                                        role="tab"
-                                        aria-selected={sidebar === tab}
-                                        aria-controls={`overlay-panel-${tab}`}
-                                        id={`overlay-tab-${tab}`}
-                                        onClick={() => setSidebar(tab)}
-                                    >
-                                        {{widgets: "Widgets", design: "Design", assets: "Assets"}[tab]}
-                                    </button>
-                                ))}
-                            </div>
-                            <section
-                                id="overlay-panel-design"
-                                role="tabpanel"
-                                aria-labelledby="overlay-tab-design"
-                                hidden={sidebar !== "design"}
-                            >
-                                <SceneSettings key={overlay.id} layout={layout} onChange={updateLayout} />
-                            </section>
-                            <section
-                                id="overlay-panel-assets"
-                                role="tabpanel"
-                                aria-labelledby="overlay-tab-assets"
-                                hidden={sidebar !== "assets"}
-                            >
-                                <AssetLibrary
-                                    assets={media.assets}
-                                    loading={media.loading}
-                                    uploading={media.uploading}
-                                    deletingId={media.deletingId}
-                                    progress={media.progress}
-                                    full={layout.widgets.length >= MAX_OVERLAY_WIDGETS}
-                                    onUpload={(files) => {
-                                        setError(null)
-                                        void media.uploadFiles(files)
-                                    }}
-                                    onAdd={(asset) => addAssets([asset])}
-                                    onRemove={removeAsset}
-                                />
-                            </section>
-                            <section
-                                id="overlay-panel-widgets"
-                                role="tabpanel"
-                                aria-labelledby="overlay-tab-widgets"
-                                hidden={sidebar !== "widgets"}
-                            >
-                                <h2>Widgets</h2>
-                                <p className="muted overlay-hint">Füge ein Widget hinzu und ziehe es in deine Szene.</p>
-                                <div className="overlay-catalog">
-                                    {WIDGET_CATALOG_TYPES.map((type) => (
-                                        <button
-                                            key={type}
-                                            className="button"
-                                            onClick={() => addWidget(type)}
-                                            disabled={layout.widgets.length >= MAX_OVERLAY_WIDGETS}
-                                        >
-                                            ＋ {widgetModule(type).label}
-                                        </button>
-                                    ))}
-                                </div>
-                                <p className="muted overlay-hint">
-                                    {layout.widgets.length} / {MAX_OVERLAY_WIDGETS} Widgets
-                                </p>
-                                <WidgetLayers
-                                    layout={layout}
-                                    assets={media.assets}
-                                    selectedId={selectedId}
-                                    onSelect={(id) => selectItem({type: "widget", id})}
-                                    onRemove={removeWidget}
-                                    onChange={updateLayout}
-                                />
-                                {selected ? (
-                                    <WidgetSettings
-                                        widget={selected}
-                                        assets={media.assets}
-                                        onChange={updateWidget}
-                                        onRemove={() => removeWidget(selected.id)}
-                                        onSetBackground={() => setWidgetBackground(selected.id)}
-                                        previewAudio={previewAudio}
-                                        onPreviewAudioChange={setPreviewAudio}
-                                    />
-                                ) : (
-                                    <p className="muted overlay-hint">
-                                        Wähle ein Widget aus, um Größe und Farben anzupassen.
-                                    </p>
-                                )}
-                            </section>
-                        </aside>
                         <section className="overlay-preview-section">
-                            <div className="overlay-preview-heading">
-                                <h2>Live-Vorschau</h2>
-                                <span
-                                    className="muted"
-                                    title="Editor-Koordinaten; die Ausgabe skaliert auf die Auflösung deiner OBS-Browser-Quelle."
-                                >
-                                    1920 × 1080 (Referenz)
-                                </span>
-                            </div>
                             <OverlayCanvas
                                 key={overlay.id}
                                 layout={layout}
@@ -446,13 +435,205 @@ function OverlaySession({
                                 onDropFiles={(files, x, y) => void uploadToCanvas(files, x, y)}
                                 onDropAsset={addLibraryAsset}
                             />
-                            {layout.widgets.length === 0 && (
-                                <p className="muted">
-                                    Deine Szene ist leer. Füge ein Widget über die Werkzeugleiste hinzu.
-                                </p>
-                            )}
                         </section>
+                        <aside className="overlay-sidebar">
+                            <div className="overlay-sidebar-tabs" role="tablist" aria-label="Overlay-Werkzeuge">
+                                <EditorTab active={panelTab === "layout"} onClick={() => setPanelTab("layout")}>
+                                    Layout
+                                </EditorTab>
+                                <EditorTab active={panelTab === "properties"} onClick={() => setPanelTab("properties")}>
+                                    Eigenschaften
+                                </EditorTab>
+                            </div>
+                            <div className="overlay-sidebar-content">
+                                {panelTab === "layout" && (
+                                    <section id="overlay-panel-layout" role="tabpanel" aria-label="Layout">
+                                        <div className="overlay-settings-block">
+                                            <SidebarSection label="Ebenen" defaultOpen>
+                                                <button
+                                                    type="button"
+                                                    className="button overlay-layers-add"
+                                                    onClick={() => setAddDialog("widgets")}
+                                                >
+                                                    Neue Ebene hinzufügen
+                                                </button>
+                                                <WidgetLayers
+                                                    layout={layout}
+                                                    assets={media.assets}
+                                                    selectedId={selectedId}
+                                                    onSelect={(id) => selectItem({type: "widget", id})}
+                                                    onRemove={removeWidget}
+                                                    onChange={updateLayout}
+                                                />
+                                            </SidebarSection>
+                                        </div>
+                                        <div className="overlay-settings-block">
+                                            <SceneSidebar
+                                                layout={layout}
+                                                onChange={updateLayout}
+                                                only="theme"
+                                                onEditStart={() => history.begin("pointer")}
+                                                onEditEnd={history.end}
+                                            />
+                                        </div>
+                                    </section>
+                                )}
+                                {panelTab === "properties" && (
+                                    <section id="overlay-panel-properties" role="tabpanel" aria-label="Eigenschaften">
+                                        {selected ? (
+                                            <WidgetSettings
+                                                widget={selected}
+                                                assets={media.assets}
+                                                onChange={updateWidget}
+                                                onRemove={() => removeWidget(selected.id)}
+                                                onSetBackground={() => setWidgetBackground(selected.id)}
+                                                previewAudio={previewAudio}
+                                                onPreviewAudioChange={setPreviewAudio}
+                                                onEditStart={() => history.begin("pointer")}
+                                                onEditEnd={history.end}
+                                            />
+                                        ) : (
+                                            <div className="overlay-properties-empty">
+                                                <div className="overlay-settings-head">
+                                                    {sceneRenaming ? (
+                                                        <input
+                                                            className="overlay-settings-rename"
+                                                            value={sceneRenameValue}
+                                                            autoFocus
+                                                            maxLength={80}
+                                                            aria-label="Szene umbenennen"
+                                                            onChange={(event) =>
+                                                                setSceneRenameValue(event.target.value)
+                                                            }
+                                                            onBlur={() => {
+                                                                setSceneRenaming(false)
+                                                                const name = sceneRenameValue.trim()
+                                                                if (name && overlay && name !== overlay.name)
+                                                                    void renameScene(name)
+                                                            }}
+                                                            onKeyDown={(event) => {
+                                                                if (event.key === "Enter") event.currentTarget.blur()
+                                                                if (event.key === "Escape") setSceneRenaming(false)
+                                                            }}
+                                                        />
+                                                    ) : (
+                                                        <h3 className="overlay-settings-scene">{overlay.name}</h3>
+                                                    )}
+                                                    <div className="overlay-settings-actions">
+                                                        <button
+                                                            type="button"
+                                                            className="overlay-icon-button"
+                                                            aria-label="Szene umbenennen"
+                                                            title="Umbenennen"
+                                                            onClick={() => {
+                                                                setSceneRenameValue(overlay.name)
+                                                                setSceneRenaming(true)
+                                                            }}
+                                                        >
+                                                            <svg
+                                                                aria-hidden="true"
+                                                                width="16"
+                                                                height="16"
+                                                                viewBox="0 0 16 16"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                            >
+                                                                <path
+                                                                    d="M2.59998 13.4L3.59998 10.2L10.7 3.09999C11.1 2.69999 11.8 2.69999 12.2 3.09999C12.6 3.49999 12.6 4.19999 12.2 4.59999L5.09998 11.7L2.59998 13.4Z"
+                                                                    fill="currentColor"
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className="overlay-icon-button"
+                                                            aria-label="Szene löschen"
+                                                            title="Szene löschen"
+                                                            disabled={!!busy || scenes.length <= 1}
+                                                            onClick={() => setSceneDeleteOpen(true)}
+                                                        >
+                                                            <svg
+                                                                aria-hidden="true"
+                                                                width="16"
+                                                                height="16"
+                                                                viewBox="0 0 16 16"
+                                                                fill="none"
+                                                                xmlns="http://www.w3.org/2000/svg"
+                                                            >
+                                                                <path d="M3.5 4H12.5V5.4H3.5V4Z" fill="currentColor" />
+                                                                <path
+                                                                    d="M6.40002 2.39999H9.60002V3.59999H6.40002V2.39999Z"
+                                                                    fill="currentColor"
+                                                                />
+                                                                <path
+                                                                    d="M4.70001 6H11.3L10.7 13.4H5.30001L4.70001 6Z"
+                                                                    fill="currentColor"
+                                                                />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <SceneSidebar
+                                                    layout={layout}
+                                                    onChange={updateLayout}
+                                                    only="scene"
+                                                    onEditStart={() => history.begin("pointer")}
+                                                    onEditEnd={history.end}
+                                                />
+                                            </div>
+                                        )}
+                                    </section>
+                                )}
+                            </div>
+                        </aside>
                     </div>
+                </>
+            )}
+            {overlay && layout && (
+                <>
+                    {createDialog && (
+                        <NewSceneDialog
+                            busy={!!busy}
+                            onClose={() => setCreateDialog(false)}
+                            onCreate={(name, scene, theme, font) => void createWithTheme(name, scene, theme, font)}
+                        />
+                    )}
+                    {sceneDeleteOpen && overlay && (
+                        <DeleteDialog
+                            selected={overlay}
+                            busy={!!busy}
+                            onDelete={(id) => void deleteScene(id)}
+                            onClose={() => setSceneDeleteOpen(false)}
+                        />
+                    )}
+                    {addDialog && (
+                        <AddDialog
+                            defaultTab={addDialog}
+                            widgetCount={layout.widgets.length}
+                            maxWidgets={MAX_OVERLAY_WIDGETS}
+                            designChoices={
+                                WIDGET_CATALOG_TYPES.length
+                                    ? Object.values(widgetModule(WIDGET_CATALOG_TYPES[0]).designs).map((item) => ({
+                                          value: item.id,
+                                          label: item.label
+                                      }))
+                                    : []
+                            }
+                            assets={media.assets}
+                            assetsLoading={media.loading}
+                            uploading={media.uploading}
+                            deletingId={media.deletingId}
+                            assetProgress={media.progress}
+                            onAddWidget={addWidget}
+                            onUploadAssets={(files) => {
+                                setError(null)
+                                void media.uploadFiles(files)
+                            }}
+                            onRemoveAsset={removeAsset}
+                            onAddAsset={addPlacedAsset}
+                            onClose={() => setAddDialog(null)}
+                        />
+                    )}
                 </>
             )}
         </>
@@ -468,7 +649,7 @@ export type OverlayLinkProps = {
 export type OverlayEditorProps = {
     basePath: string
     request: OverlayRequest
-    backHref: string
+    backHref?: string
     loginHref?: string
     title?: string
     backLabel?: string
@@ -481,22 +662,15 @@ export function OverlayEditor({
     request,
     backHref,
     loginHref,
-    title = "Overlay gestalten",
-    backLabel = "Zur Serverübersicht",
-    previewIntervalMs = 5000,
-    linkComponent
+    backLabel,
+    previewIntervalMs = 5000
 }: OverlayEditorProps) {
     const [revision, setRevision] = useState(0)
     const stableRequest = useStableRequest(request)
-    const LinkComponent = linkComponent ?? "a"
+    void backHref
+    void backLabel
     return (
         <section className="overlay-editor">
-            <header className="overlay-editor-heading">
-                <LinkComponent className="back-link" href={backHref}>
-                    {backLabel}
-                </LinkComponent>
-                <h1>{title}</h1>
-            </header>
             <OverlaySession
                 key={`${basePath}-${revision}`}
                 basePath={basePath}

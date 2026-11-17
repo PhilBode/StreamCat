@@ -1,6 +1,8 @@
-import Link from "next/link"
 import {headers} from "next/headers"
+import {SiteHeader} from "@/components/layout/site-header"
+import {ButtonLink} from "@/components/ui/button"
 import {backendUrl} from "../../lib/backend"
+import "./home.css"
 
 async function sessionStatus(): Promise<"guest" | "authenticated" | "unavailable"> {
     const cookie = (await headers()).get("cookie")
@@ -20,100 +22,74 @@ async function sessionStatus(): Promise<"guest" | "authenticated" | "unavailable
     return "unavailable"
 }
 
+const FEATURES = [
+    {
+        title: "Discord",
+        description: "Verwalte deine Server und kündige Streams im passenden Channel an."
+    },
+    {
+        title: "Twitch",
+        description: "Zeige deinen Chat im Overlay und empfange Song-Requests für deinen Stream."
+    },
+    {
+        title: "Spotify",
+        description: "Song Requests landen direkt in deiner Queue. Dein aktueller Song kann im Overlay angezeigt werden"
+    },
+    {
+        title: "OBS",
+        description: "Schnelles Setup, da jede Szene nur einen Link braucht."
+    }
+] as const
+
 export default async function Home({searchParams}: {searchParams: Promise<{login?: string}>}) {
     const {login} = await searchParams
     const session = await sessionStatus()
     return (
-        <div className="home">
-            <section className="hero" aria-labelledby="home-title">
-                <div className="hero-copy">
-                    <p className="terminal-caption">Discord · Twitch · Spotify · OBS</p>
-                    <h1 id="home-title">
-                        Dein Stream.
-                        <br />
-                        Deine Szene.
+        <>
+            <SiteHeader context={{path: "start", label: "Startseite"}} />
+            <div className="home">
+                <section className="hero" aria-labelledby="home-title">
+                    <h1 id="home-title" className="hero-logo">
+                        <span className="hero-logo-cat" aria-hidden="true">
+                            ᓚ₍ ^. .^₎
+                        </span>
+                        <span className="hero-logo-name">StreamCat</span>
                     </h1>
-                    <p className="hero-description">
-                        Baue dein Overlay, sammle Song Requests und bring deinen Stream auf Discord. Ein Dashboard für
-                        dein Setup.
+                    <p className="hero-tagline">
+                        Ein Dashboard für dein Setup, baue dir dein eigenes Overlay und richte Song-Requests und
+                        Notifications für deine Streams ein.
                     </p>
-                    <p className="muted">
-                        {session === "guest"
-                            ? "Melde dich mit Discord an und wähle deinen Server."
-                            : "Öffne einen Server, den du besitzt oder als Administrator verwaltest."}
-                    </p>
+                    <div className="hero-actions">
+                        {session === "guest" && (
+                            <ButtonLink href="/api/backend/dashboard/auth/login">Mit Discord anmelden</ButtonLink>
+                        )}
+                        {session === "authenticated" && <ButtonLink href="/dashboard">Weiter zum Dashboard</ButtonLink>}
+                    </div>
                     {login && session === "guest" && (
-                        <p role="alert" className="error">
+                        <p role="alert" className="home-alert">
                             {login === "invalid"
                                 ? "Die Discord-Anmeldung wurde abgebrochen oder ist abgelaufen. Bitte starte den Login erneut auf dieser Seite."
                                 : "Die Discord-Anmeldung konnte nicht abgeschlossen werden. Bitte versuche es später erneut."}
                         </p>
                     )}
                     {session === "unavailable" && (
-                        <p role="alert" className="error">
+                        <p role="alert" className="home-alert">
                             Deine Anmeldung konnte gerade nicht geprüft werden. Bitte versuche es im Dashboard erneut.
                         </p>
                     )}
-                    <div className="actions">
-                        {session === "guest" && (
-                            <a className="button primary" href="/api/backend/dashboard/auth/login">
-                                Mit Discord anmelden
-                            </a>
-                        )}
-                        {session !== "guest" && (
-                            <Link className="button primary" href="/dashboard">
-                                Weiter zum Dashboard
-                            </Link>
-                        )}
-                        {session === "authenticated" && (
-                            <form action="/api/backend/dashboard/auth/logout" method="post">
-                                <button className="button">Abmelden</button>
-                            </form>
-                        )}
-                    </div>
-                </div>
-            </section>
-            <section className="service-index" aria-label="StreamCat-Funktionen">
-                <h2>Alles für deinen Stream, an einem Ort</h2>
-                <dl>
-                    <div>
-                        <dt>
-                            <span className="service-number" aria-hidden="true">
-                                01
-                            </span>
-                            Discord
-                        </dt>
-                        <dd>Verwalte deine Server und kündige Streams im passenden Channel an.</dd>
-                    </div>
-                    <div>
-                        <dt>
-                            <span className="service-number" aria-hidden="true">
-                                02
-                            </span>
-                            Twitch
-                        </dt>
-                        <dd>Zeige deinen Chat im Overlay und empfange Musikwünsche aus deinem Stream.</dd>
-                    </div>
-                    <div>
-                        <dt>
-                            <span className="service-number" aria-hidden="true">
-                                03
-                            </span>
-                            Spotify
-                        </dt>
-                        <dd>Song Requests landen direkt in deiner Queue. Der aktuelle Song im Overlay.</dd>
-                    </div>
-                    <div>
-                        <dt>
-                            <span className="service-number" aria-hidden="true">
-                                04
-                            </span>
-                            OBS
-                        </dt>
-                        <dd>Platziere Widgets, Bilder und Videos. Jede Szene bekommt ihren eigenen Link.</dd>
-                    </div>
-                </dl>
-            </section>
-        </div>
+                </section>
+                <section className="feature-index" aria-label="StreamCat-Funktionen">
+                    <h2 className="feature-index-title">Alles für deinen Stream, an einem Ort.</h2>
+                    <ul className="feature-grid">
+                        {FEATURES.map((feature) => (
+                            <li className="feature-card" key={feature.title}>
+                                <h3>{feature.title}</h3>
+                                <p>{feature.description}</p>
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+            </div>
+        </>
     )
 }

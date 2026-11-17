@@ -2,13 +2,12 @@
 
 import Image from "next/image"
 import {useState} from "react"
-import {Skeleton} from "../ui/skeleton"
+import "./profile-avatar.css"
 
 export function ProfileAvatar({src, name}: {src?: string | null; name: string}) {
-    const [loadedSource, setLoadedSource] = useState<string | null>(null)
-    const [failedSource, setFailedSource] = useState<string | null>(null)
+    const [failed, setFailed] = useState(false)
 
-    if (!src || src === failedSource) {
+    if (!src || failed) {
         return (
             <span className="profile-avatar placeholder" aria-hidden="true">
                 {name.trim().slice(0, 1).toUpperCase() || "?"}
@@ -18,16 +17,14 @@ export function ProfileAvatar({src, name}: {src?: string | null; name: string}) 
 
     return (
         <span className="profile-avatar-frame">
-            {loadedSource !== src && <Skeleton className="skeleton-avatar" />}
             <Image
                 unoptimized
-                className={`profile-avatar${loadedSource !== src ? " profile-avatar-loading" : ""}`}
+                className="profile-avatar"
                 src={src}
                 alt=""
                 width={48}
                 height={48}
-                onLoad={() => setLoadedSource(src)}
-                onError={() => setFailedSource(src)}
+                onError={() => setFailed(true)}
             />
         </span>
     )

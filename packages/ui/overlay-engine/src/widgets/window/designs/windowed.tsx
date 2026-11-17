@@ -7,7 +7,8 @@ type WindowWidget = Extract<EditorWidget, {type: "WINDOW"}>
 export const windowColorControls = [
     {key: "color", label: "Textfarbe"},
     {key: "backgroundColor", label: "Hintergrund"},
-    {key: "--window-bg", label: "Fensterleiste"}
+    {key: "--window-bg", label: "Fensterfläche"},
+    {key: "--progress-color", label: "Fortschritt"}
 ] as const satisfies readonly WidgetColorControl[]
 
 export function WindowDesign({widget, title}: WidgetRenderProps) {

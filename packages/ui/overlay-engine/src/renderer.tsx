@@ -22,13 +22,23 @@ export function OverlayRenderer({
     audioEnabled?: boolean
 }) {
     const scene = layout.scene ?? "widgets"
+    const themeVars = layout.themeColors
+        ? ({
+              ...(layout.themeColors.primary ? {"--progress-color": layout.themeColors.primary} : {}),
+              ...(layout.themeColors.secondary ? {"--gradient-end": layout.themeColors.secondary} : {}),
+              ...(layout.themeColors.surface ? {"--gradient-start": layout.themeColors.surface} : {}),
+              ...(layout.themeColors.window ? {"--window-bg": layout.themeColors.window} : {}),
+              ...(layout.themeColors.text ? {"--scene-text": layout.themeColors.text} : {})
+          } as CSSProperties)
+        : undefined
     return (
         <div
             className={`overlay-renderer overlay-theme-${layout.theme} overlay-font-${layout.font ?? "tiny5"}`}
-            style={{width: layout.width, height: layout.height}}
+            style={{width: layout.width, height: layout.height, ...themeVars}}
         >
             <StandardScene scene={scene} chat={chat} socials={layout.socials} />
             {layout.widgets.map((widget) => {
+                if (widget.hidden) return null
                 const media = widget.type === "IMAGE" || widget.type === "VIDEO"
                 const module = widgetModule(widget.type)
                 const design = module.designs[widget.params.design] ?? module.designs[module.defaultDesign]
