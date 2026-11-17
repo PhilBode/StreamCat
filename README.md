@@ -3,6 +3,11 @@
 A Discord bot for Twitch live alerts and Spotify song requests, with a web dashboard
 and an OBS overlay editor. Build scenes with draggable widgets, chat, images and videos.
 
+## License
+
+[MIT](LICENSE)
+
+
 ## Run locally (Bun / VS Code)
 
 You need Bun and Docker.
@@ -32,7 +37,7 @@ Connect Twitch and Spotify through the dashboard or Discord.
 ## Docker / Arcane
 
 Use the same environment settings and callback URLs, then deploy `compose.yml`
-in Arcane or run `docker compose up -d --build`.
+in Arcane (a self-hosted Docker deployment UI) or run `docker compose up -d --build`.
 
 Set `TUNNEL_TOKEN` to start the bundled tunnel automatically. In Cloudflare, point the
 hostname at `http://web:3000` — the web app now runs in the same Docker network.
