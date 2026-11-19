@@ -1,4 +1,5 @@
 import {headers} from "next/headers"
+import {spotifyCallbackUrl} from "@streamcat/core/config"
 import {SiteHeader} from "@/components/layout/site-header"
 import {Guild} from "@/components/dashboard/guild"
 import {backendUrl} from "../../../../lib/backend"
@@ -20,13 +21,26 @@ async function guildName(guildId: string): Promise<string | null> {
     }
 }
 
-export default async function GuildPage({params}: {params: Promise<{guildId: string}>}) {
-    const {guildId} = await params
+export default async function GuildPage({
+    params,
+    searchParams
+}: {
+    params: Promise<{guildId: string}>
+    searchParams: Promise<{result?: string; reason?: string}>
+}) {
+    const [{guildId}, query] = await Promise.all([params, searchParams])
     const name = await guildName(guildId)
+    const spotifyRedirectUri = process.env.PUBLIC_URL?.trim() ? spotifyCallbackUrl() : null
     return (
         <>
             <SiteHeader context={{path: "dashboard", label: name ? `Meine Server / ${name}` : "Meine Server"}} />
-            <Guild key={guildId} guildId={guildId} />
+            <Guild
+                key={guildId}
+                guildId={guildId}
+                oauthResult={query.result ?? null}
+                oauthFailureReason={query.reason ?? null}
+                spotifyRedirectUri={spotifyRedirectUri}
+            />
         </>
     )
 }

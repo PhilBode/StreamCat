@@ -30,6 +30,13 @@ export class OverlayRepository {
         return this.prisma.overlay.findUnique({where: {id: sceneId, guildId}, include: widgetsInLayerOrder})
     }
 
+    findBrowserTokens(guildId: string): Promise<{id: string; browserToken: string | null}[]> {
+        return this.prisma.overlay.findMany({
+            where: {guildId},
+            select: {id: true, browserToken: true}
+        })
+    }
+
     async deleteScene(guildId: string, sceneId: string): Promise<boolean> {
         const deleted = await this.prisma.overlay.deleteMany({where: {id: sceneId, guildId}})
         return deleted.count > 0
@@ -39,7 +46,8 @@ export class OverlayRepository {
         guildId: string,
         name: string,
         tokenHash: string,
-        layout: OverlayLayout
+        layout: OverlayLayout,
+        browserToken?: string
     ): Promise<StoredOverlay | null> {
         return this.prisma.$transaction(async (transaction) => {
             // Concurrent requests must share this lock to enforce the scene limit.
@@ -58,6 +66,7 @@ export class OverlayRepository {
                     guildId,
                     name,
                     tokenHash,
+                    browserToken,
                     settings: getLayoutSettings(layout),
                     widgets: {create: layout.widgets}
                 },
@@ -98,8 +107,8 @@ export class OverlayRepository {
         })
     }
 
-    async rotateToken(guildId: string, sceneId: string, tokenHash: string): Promise<void> {
-        await this.prisma.overlay.update({where: {id: sceneId, guildId}, data: {tokenHash}})
+    async rotateToken(guildId: string, sceneId: string, tokenHash: string, browserToken: string): Promise<void> {
+        await this.prisma.overlay.update({where: {id: sceneId, guildId}, data: {tokenHash, browserToken}})
     }
 
     renameScene(guildId: string, sceneId: string, name: string): Promise<StoredOverlay> {

@@ -8,6 +8,7 @@ import {SongRequestRepository, TwitchAuthRepository, TwitchConfigRepository} fro
 import {TwitchOAuthProvider} from "../../../integrations/twitch/auth/twitch-oauth-provider"
 import {TwitchChatClient} from "../../../integrations/twitch/chat/twitch-chat-client"
 import {TwitchService} from "../../../integrations/twitch/services/twitch.service"
+import {AccountAlreadyLinkedError} from "../helpers/account-already-linked-error"
 
 @Injectable()
 export class TwitchConnectionService {
@@ -66,22 +67,35 @@ export class TwitchConnectionService {
         this.logger.info(`Guild auth added for ${guildId} (user ${userId})`)
     }
 
-    async removeGuildAuth(guildId: string): Promise<void> {
+    async removeGuildAuth(guildId: string): Promise<boolean> {
+        const [auth, mainStreamer] = await Promise.all([
+            this.authRepo.findIdentityByGuildId(guildId),
+            this.configRepo.findMainByGuildId(guildId)
+        ])
         this.events.unsubscribeFromRedemptions(guildId)
-        const auth = await this.authRepo.findByGuildId(guildId)
-        await this.authRepo.delete(guildId)
-        await this.requests.clear(guildId)
+        await this.authRepo.deleteConnection(guildId)
+        if (mainStreamer) await this.events.unsubscribeFromStreamer(mainStreamer.channelId)
         if (auth) {
+            this.twitchAuth.removeUser(auth.userId)
             this.logger.info(`Removed guild auth for ${guildId} (user ${auth.userId})`)
         }
         await this.chat.reconcile()
+        return Boolean(auth || mainStreamer)
     }
 
     private async saveConnection(guildId: string, token: TwitchToken): Promise<void> {
         const username = token.username.toLowerCase()
+        const existingLink = await this.authRepo.findIdentityByUserId(token.userId)
+        if (existingLink && existingLink.guildId !== guildId) throw new AccountAlreadyLinkedError()
+
         const channels = await this.configRepo.findByGuildId(guildId)
         const alreadyFollowed = channels.some((channel) => channel.channelId === token.userId)
-        await this.authRepo.save(guildId, {...token, username})
+        try {
+            await this.authRepo.save(guildId, {...token, username})
+        } catch (error) {
+            if (isUniqueConflict(error)) throw new AccountAlreadyLinkedError()
+            throw error
+        }
         const assigned = await this.requests.assignChannel(guildId, token.userId)
         this.logger.info(`Twitch account saved guild=${guildId}`)
         if (!assigned)
@@ -99,4 +113,8 @@ export class TwitchConnectionService {
             })
         }
     }
+}
+
+function isUniqueConflict(error: unknown): boolean {
+    return typeof error === "object" && error !== null && "code" in error && error.code === "P2002"
 }

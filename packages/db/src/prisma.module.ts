@@ -33,6 +33,7 @@ import {TokenEncryptionService} from "@streamcat/core"
         HealthRepository
     ],
     exports: [
+        TokenEncryptionService,
         TwitchBotAccountRepository,
         SongRequestRepository,
         WebSessionRepository,

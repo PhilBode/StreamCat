@@ -49,12 +49,18 @@ export function useOverlayScenes(basePath: string, request: OverlayRequest) {
     useEffect(() => {
         const controller = new AbortController()
         lifetime.current = controller
-        void request<GuildOverlay[]>(`${path}/scenes`, {signal: controller.signal})
-            .then((result) => {
+        void Promise.all([
+            request<GuildOverlay[]>(`${path}/scenes`, {signal: controller.signal}),
+            request<Record<string, string>>(`${path}/scene-links`, {signal: controller.signal}).catch(
+                () => ({}) as Record<string, string>
+            )
+        ])
+            .then(([result, sceneLinks]) => {
                 if (controller.signal.aborted) return
                 const requested = new URLSearchParams(window.location.search).get("scene")
                 const selected = result.find((scene) => scene.id === requested) ?? result[0] ?? null
                 setScenes(result)
+                setLinks(sceneLinks)
                 setOverlay(selected)
                 resetLayout(selected?.layout ?? null)
             })

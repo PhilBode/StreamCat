@@ -9,6 +9,7 @@ export type OAuthFailureReason =
     | "temporarily_unavailable"
     | "provider_error_unknown"
     | "missing_or_invalid_code"
+    | "account_already_linked"
 
 const PROVIDER_ERRORS: readonly OAuthFailureReason[] = [
     "access_denied",
@@ -34,6 +35,8 @@ export function oauthFailureMessage(provider: "Twitch" | "Spotify", reason?: OAu
             return `${provider} authorization was denied. Please approve access to connect your account.`
         case "missing_or_invalid_code":
             return "The callback did not contain an authorization code. Please start a new login."
+        case "account_already_linked":
+            return "This Twitch account is already linked to another server."
         case "server_error":
         case "temporarily_unavailable":
             return `${provider} could not complete authorization (${reason}). Please start a new login and try again.`

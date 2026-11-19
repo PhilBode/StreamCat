@@ -7,7 +7,7 @@ import {
     UnauthorizedException
 } from "@nestjs/common"
 import {createHash, randomBytes, randomUUID} from "node:crypto"
-import {BotLoggerService, frontendUrl, type ModuleLogger} from "@streamcat/core"
+import {BotLoggerService, errorDetails, frontendUrl, TokenEncryptionService, type ModuleLogger} from "@streamcat/core"
 import {
     overlayPreset,
     OVERLAY_THEME_COLORS,
@@ -65,13 +65,33 @@ export class OverlayService {
         private readonly twitchAuth: TwitchAuthRepository,
         private readonly playback: OverlayPlaybackService,
         logger: BotLoggerService,
-        private readonly assets: OverlayAssetsService
+        private readonly assets: OverlayAssetsService,
+        private readonly tokenEncryption: TokenEncryptionService
     ) {
         this.logger = logger.forModule("Overlay")
     }
 
     async scenes(guildId: string): Promise<GuildOverlay[]> {
         return (await this.repository.findScenes(guildId)).map((overlay) => this.toDashboard(overlay))
+    }
+
+    async sceneLinks(guildId: string): Promise<Record<string, string>> {
+        const scenes = await this.repository.findBrowserTokens(guildId)
+        const entries = await Promise.all(
+            scenes.map(async (scene) => {
+                if (!scene.browserToken) return null
+                try {
+                    const token = await this.tokenEncryption.decrypt(scene.browserToken)
+                    return [scene.id, this.browserSourceUrl(token)] as const
+                } catch (error) {
+                    this.logger.warn(
+                        `Could not restore overlay browser link guild=${guildId} overlay=${scene.id} ${errorDetails(error)}`
+                    )
+                    return null
+                }
+            })
+        )
+        return Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null))
     }
 
     async scene(guildId: string, overlayId: string): Promise<GuildOverlay> {
@@ -86,7 +106,8 @@ export class OverlayService {
             throw new BadRequestException("Unbekannte Overlay-Szene.")
         const token = randomBytes(32).toString("base64url")
         const layout = overlayPreset(scene as OverlayScene, [randomUUID(), randomUUID()])
-        const overlay = await this.repository.createScene(guildId, name, hashToken(token), layout)
+        const browserToken = await this.tokenEncryption.encrypt(token)
+        const overlay = await this.repository.createScene(guildId, name, hashToken(token), layout, browserToken)
         if (!overlay) throw new ConflictException("Maximal 20 Szenen pro Server sind erlaubt.")
         this.logger.info(`Overlay scene created guild=${guildId} overlay=${overlay.id} scene=${scene}`)
         return {overlay: this.toDashboard(overlay), browserSourceUrl: this.browserSourceUrl(token)}
@@ -109,7 +130,8 @@ export class OverlayService {
     async rotateScene(guildId: string, overlayId: string): Promise<OverlayLink> {
         await this.requireScene(guildId, overlayId)
         const token = randomBytes(32).toString("base64url")
-        await this.repository.rotateToken(guildId, overlayId, hashToken(token))
+        const browserToken = await this.tokenEncryption.encrypt(token)
+        await this.repository.rotateToken(guildId, overlayId, hashToken(token), browserToken)
         this.logger.info(`Overlay scene URL rotated guild=${guildId} overlay=${overlayId}`)
         return {browserSourceUrl: this.browserSourceUrl(token)}
     }

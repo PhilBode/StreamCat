@@ -3,8 +3,8 @@
 import {useEffect, useState, type FormEvent} from "react"
 import type {DashboardConnections, SpotifyPlaybackState} from "@streamcat/interfaces"
 import {apiRequest, postJson} from "../../lib/api"
-import {Accordion} from "../ui/accordion"
 import {Button} from "../ui/button"
+import {Dialog} from "../ui/dialog"
 import {StatusPill} from "../ui/status-pill"
 import {TextInput} from "../ui/text-input"
 import {ProfileAvatar} from "./profile-avatar"
@@ -12,19 +12,50 @@ import "./connections.css"
 
 const SONG_POLL_MS = 15_000
 
-export function Connections({guildId}: {guildId: string}) {
-    const [connections, setConnections] = useState<DashboardConnections | null>(null)
-    const [playback, setPlayback] = useState<SpotifyPlaybackState | null>(null)
-    const [clientId, setClientId] = useState("")
+type ConnectionsProps = {
+    guildId: string
+    initialConnections?: DashboardConnections | null
+    initialError?: string | null
+    initialPlayback?: SpotifyPlaybackState | null
+    oauthResult?: string | null
+    oauthFailureReason?: string | null
+    spotifyRedirectUri?: string | null
+    onConnectionsChange?: (connections: DashboardConnections) => void
+}
+
+export function Connections({
+    guildId,
+    initialConnections,
+    initialError,
+    initialPlayback,
+    oauthResult,
+    oauthFailureReason,
+    spotifyRedirectUri,
+    onConnectionsChange
+}: ConnectionsProps) {
+    const hasInitial = initialConnections !== undefined
+    const [connections, setConnections] = useState<DashboardConnections | null>(initialConnections ?? null)
+    const [playback, setPlayback] = useState<SpotifyPlaybackState | null>(initialPlayback ?? null)
+    const [clientId, setClientId] = useState(initialConnections?.spotify?.clientId ?? "")
     const [secret, setSecret] = useState("")
     const [busy, setBusy] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const [notice, setNotice] = useState<string | null>(null)
+    const [unlinkTarget, setUnlinkTarget] = useState<"twitch" | "spotify" | null>(null)
+    const [error, setError] = useState<string | null>(
+        initialError ??
+            (oauthResult === "failed"
+                ? oauthFailureReason === "account_already_linked"
+                    ? "Dieses Twitch-Konto ist bereits mit einem anderen Server verknüpft."
+                    : "Die Verknüpfung ist fehlgeschlagen. Bitte starte sie erneut."
+                : null)
+    )
+    const [notice, setNotice] = useState<string | null>(
+        oauthResult === "success" ? "Das Konto wurde für diesen Server verknüpft." : null
+    )
     const path = `/dashboard/guilds/${encodeURIComponent(guildId)}`
 
     useEffect(() => {
+        if (hasInitial) return
         const abort = new AbortController()
-        const query = new URLSearchParams(window.location.search)
         void apiRequest<DashboardConnections>(
             `${path}/connections`,
             {signal: abort.signal},
@@ -34,16 +65,13 @@ export function Connections({guildId}: {guildId: string}) {
                 if (abort.signal.aborted) return
                 setConnections(data)
                 setClientId(data.spotify?.clientId || "")
-                if (query.get("result") === "success") setNotice("Das Konto wurde für diesen Server verknüpft.")
-                if (query.get("result") === "failed")
-                    setError("Die Verknüpfung ist fehlgeschlagen. Bitte starte sie erneut.")
             })
             .catch((cause) => {
                 if (!abort.signal.aborted)
                     setError(cause instanceof Error ? cause.message : "Konten konnten nicht geladen werden.")
             })
         return () => abort.abort()
-    }, [path])
+    }, [path, hasInitial])
 
     useEffect(() => {
         if (!connections?.spotify) return
@@ -57,17 +85,16 @@ export function Connections({guildId}: {guildId: string}) {
                     ""
                 )
                 if (!abort.signal.aborted) setPlayback(data.playback)
-            } catch {
-                
-            }
+            } catch {}
             if (!abort.signal.aborted) timeout = setTimeout(() => void poll(), SONG_POLL_MS)
         }
-        void poll()
+        if (initialPlayback === undefined) void poll()
+        else timeout = setTimeout(() => void poll(), SONG_POLL_MS)
         return () => {
             abort.abort()
             clearTimeout(timeout)
         }
-    }, [path, connections?.spotify])
+    }, [path, connections?.spotify, initialPlayback])
 
     async function connect(provider: "twitch" | "spotify") {
         setBusy(true)
@@ -86,23 +113,40 @@ export function Connections({guildId}: {guildId: string}) {
         }
     }
 
-    async function unlink(provider: "twitch" | "spotify") {
+    async function unlink(provider: "twitch" | "spotify"): Promise<boolean> {
         setBusy(true)
         setError(null)
         try {
-            await apiRequest(
+            const result = await apiRequest<{success: boolean}>(
                 `${path}/connections/${provider}`,
                 {method: "DELETE"},
                 "Die Verbindung konnte nicht aufgehoben werden."
             )
-            setConnections((current) => (current ? {...current, [provider]: null} : current))
+            const next = connections ? {...connections, [provider]: null} : null
+            if (next) {
+                setConnections(next)
+                onConnectionsChange?.(next)
+            }
             if (provider === "spotify") setPlayback(null)
-            setNotice("Die Verbindung wurde aufgehoben.")
+            setNotice(result.success ? "Die Verbindung wurde aufgehoben." : "Die Verbindung war bereits aufgehoben.")
+            return true
         } catch (cause) {
             setError(cause instanceof Error ? cause.message : "Die Verbindung konnte nicht aufgehoben werden.")
+            return false
         } finally {
             setBusy(false)
         }
+    }
+
+    function requestUnlink(provider: "twitch" | "spotify") {
+        setError(null)
+        setUnlinkTarget(provider)
+    }
+
+    async function confirmUnlink() {
+        if (!unlinkTarget || busy) return
+        const success = await unlink(unlinkTarget)
+        if (success) setUnlinkTarget(null)
     }
 
     function spotifySubmit(event: FormEvent<HTMLFormElement>) {
@@ -110,7 +154,8 @@ export function Connections({guildId}: {guildId: string}) {
         void connect("spotify")
     }
 
-    const loading = !connections && !error
+    const loading = !hasInitial && !connections && !error
+    const unavailable = !connections && !!error
     const song = playback?.status === "playing" || playback?.status === "paused" ? playback.text : null
 
     return (
@@ -135,78 +180,141 @@ export function Connections({guildId}: {guildId: string}) {
                         <div className="connections-note connections-note--error" role="alert">
                             <strong>Verbindungen konnten nicht aktualisiert werden</strong>
                             <p>{error}</p>
+                            {unavailable && (
+                                <Button typeVariant="secondary" onClick={() => window.location.reload()}>
+                                    Erneut versuchen
+                                </Button>
+                            )}
                         </div>
                     )}
-                    <ConnectionCard
-                        provider="twitch"
-                        title="Twitch"
-                        subtitle="Dein Streaming-Konto"
-                        connected={!!connections?.twitch}
-                        avatarSrc={connections?.twitch ? `/api/backend${path}/connections/twitch/avatar` : null}
-                        accountName={connections?.twitch?.username}
-                        description={
-                            connections?.twitch
-                                ? "Dieses Konto ist für deinen Server gespeichert."
-                                : "Verbinde dein Konto, um Song Requests, Stream-Benachrichtigungen und Overlays auf diesem Server zu nutzen."
-                        }
-                        connectLabel="Twitch verbinden"
-                        busy={busy}
-                        onConnect={() => void connect("twitch")}
-                        onUnlink={() => void unlink("twitch")}
-                        song={null}
-                    />
-                    <ConnectionCard
-                        provider="spotify"
-                        title="Spotify"
-                        subtitle="Musik & Song Requests"
-                        connected={!!connections?.spotify}
-                        avatarSrc={connections?.spotify ? `/api/backend${path}/connections/spotify/avatar` : null}
-                        accountName={connections?.spotify?.username}
-                        description={
-                            connections?.spotify
-                                ? "Verwende die Zugangsdaten deiner eigenen Spotify-App."
-                                : "Verbinde dein Konto, um Song Requests und den aktuellen Song im Overlay zu nutzen."
-                        }
-                        connectLabel="Spotify verbinden"
-                        busy={busy}
-                        onConnect={() => void connect("spotify")}
-                        onUnlink={() => void unlink("spotify")}
-                        song={song}
-                    >
-                        {connections && !connections.spotify && (
-                            <Accordion label="Zugangsdaten">
-                                <form onSubmit={spotifySubmit} className="connection-form">
-                                    <TextInput
-                                        label="Client-ID"
-                                        placeholder="Client-ID deiner Spotify-App"
-                                        value={clientId}
-                                        onChange={(event) => setClientId(event.target.value)}
-                                        required
-                                        pattern="[a-fA-F0-9]{32}"
-                                        maxLength={32}
-                                        autoComplete="off"
-                                        disabled={busy}
-                                    />
-                                    <TextInput
-                                        label="Client Secret"
-                                        secret
-                                        placeholder="Client Secret deiner Spotify-App"
-                                        value={secret}
-                                        onChange={(event) => setSecret(event.target.value)}
-                                        required
-                                        minLength={16}
-                                        maxLength={64}
-                                        autoComplete="new-password"
-                                        disabled={busy}
-                                    />
-                                    <Button type="submit" disabled={busy}>
-                                        {busy ? "Anmeldung startet …" : "Spotify verbinden"}
-                                    </Button>
-                                </form>
-                            </Accordion>
-                        )}
-                    </ConnectionCard>
+                    {!unavailable && (
+                        <>
+                            <ConnectionCard
+                                provider="twitch"
+                                title="Twitch"
+                                subtitle="Dein Streaming-Konto"
+                                connected={!!connections?.twitch}
+                                avatarSrc={connections?.twitch ? `/api/backend${path}/connections/twitch/avatar` : null}
+                                accountName={connections?.twitch?.username}
+                                description={
+                                    connections?.twitch
+                                        ? "Dieses Konto ist für deinen Server gespeichert."
+                                        : "Verbinde dein Konto, um Song Requests, Stream-Benachrichtigungen und Overlays auf diesem Server zu nutzen."
+                                }
+                                connectLabel="Twitch verbinden"
+                                busy={busy}
+                                onConnect={() => void connect("twitch")}
+                                onUnlink={() => requestUnlink("twitch")}
+                                song={null}
+                            />
+                            <ConnectionCard
+                                provider="spotify"
+                                title="Spotify"
+                                subtitle="Musik & Song Requests"
+                                connected={!!connections?.spotify}
+                                avatarSrc={
+                                    connections?.spotify ? `/api/backend${path}/connections/spotify/avatar` : null
+                                }
+                                accountName={connections?.spotify?.username}
+                                description="Verwende die Zugangsdaten deiner eigenen Spotify-App."
+                                connectLabel="Spotify verbinden"
+                                busy={busy}
+                                onConnect={() => void connect("spotify")}
+                                onUnlink={() => requestUnlink("spotify")}
+                                song={song}
+                            >
+                                {connections && !connections.spotify && (
+                                    <>
+                                        <details className="spotify-tutorial">
+                                            <summary className="spotify-tutorial-summary">
+                                                <span className="spotify-tutorial-chevron" aria-hidden="true">
+                                                    ›
+                                                </span>
+                                                So bekommst du Client-ID & Secret
+                                            </summary>
+                                            <div className="spotify-steps">
+                                                <p>Hinweis: Ein Spotify Premium-Konto wird benötigt.</p>
+                                                <p>
+                                                    1. Spotify Dashboard öffnen:{" "}
+                                                    <a
+                                                        href="https://developer.spotify.com/dashboard"
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        developer.spotify.com/dashboard
+                                                    </a>
+                                                </p>
+                                                <p>2. „Create app“ klicken – Name und Beschreibung eintragen</p>
+                                                <p>
+                                                    3. „Edit Settings“ – Redirect URI hinzufügen:{" "}
+                                                    {spotifyRedirectUri ?? "https://deine-public-url/callback/spotify"}
+                                                </p>
+                                                <p>4. Client-ID und Client-Secret eingeben</p>
+                                            </div>
+                                        </details>
+                                        <form onSubmit={spotifySubmit} className="connection-form">
+                                            <TextInput
+                                                label="Client-ID"
+                                                placeholder="Client-ID deiner Spotify-App"
+                                                value={clientId}
+                                                onChange={(event) => setClientId(event.target.value)}
+                                                required
+                                                pattern="[a-fA-F0-9]{32}"
+                                                maxLength={32}
+                                                autoComplete="off"
+                                                disabled={busy}
+                                            />
+                                            <TextInput
+                                                label="Client Secret"
+                                                secret
+                                                placeholder="Client Secret deiner Spotify-App"
+                                                value={secret}
+                                                onChange={(event) => setSecret(event.target.value)}
+                                                required
+                                                minLength={16}
+                                                maxLength={64}
+                                                autoComplete="new-password"
+                                                disabled={busy}
+                                            />
+                                            <div className="connection-form-actions">
+                                                <Button type="submit" disabled={busy}>
+                                                    {busy ? "Anmeldung startet …" : "Spotify verbinden"}
+                                                </Button>
+                                            </div>
+                                        </form>
+                                    </>
+                                )}
+                            </ConnectionCard>
+                        </>
+                    )}
                 </>
+            )}
+
+            {unlinkTarget && (
+                <Dialog
+                    title="Verbindung aufheben?"
+                    closeLabel="Dialog schließen"
+                    onClose={busy ? undefined : () => setUnlinkTarget(null)}
+                    footer={
+                        <>
+                            <Button typeVariant="secondary" disabled={busy} onClick={() => setUnlinkTarget(null)}>
+                                Abbrechen
+                            </Button>
+                            <Button typeVariant="danger" disabled={busy} onClick={() => void confirmUnlink()}>
+                                {busy ? "Wird aufgehoben …" : "Aufheben"}
+                            </Button>
+                        </>
+                    }
+                >
+                    <p className="connection-dialog-text">
+                        Das Konto wird vom Service getrennt und alle Daten dazu werden gelöscht.
+                    </p>
+                    {error && (
+                        <p className="connection-dialog-error" role="alert">
+                            {error}
+                        </p>
+                    )}
+                </Dialog>
             )}
         </div>
     )
@@ -276,19 +384,19 @@ function ConnectionCard({
                 </div>
             )}
             {children}
-            <div className="connection-footer">
-                {connected ? (
-                    <Button typeVariant="danger" disabled={busy} onClick={onUnlink}>
-                        Verbindung aufheben
-                    </Button>
-                ) : (
-                    provider !== "spotify" && (
+            {(connected || provider !== "spotify") && (
+                <div className="connection-footer">
+                    {connected ? (
+                        <Button typeVariant="danger" disabled={busy} onClick={onUnlink}>
+                            Verbindung aufheben
+                        </Button>
+                    ) : (
                         <Button typeVariant="primary" disabled={busy} onClick={onConnect}>
                             {busy ? "Anmeldung startet …" : connectLabel}
                         </Button>
-                    )
-                )}
-            </div>
+                    )}
+                </div>
+            )}
         </section>
     )
 }

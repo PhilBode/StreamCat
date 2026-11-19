@@ -38,7 +38,7 @@
     .overlay-editor {
         box-sizing: border-box;
         color: var(--color-ink);
-        font-family: var(--font-body, ui-monospace, "SFMono-Regular", Consolas, monospace);
+        font-family: var(--font-body, "Departure Mono", ui-monospace, "SFMono-Regular", Consolas, monospace);
         font-size: var(--text-sm);
     }
 

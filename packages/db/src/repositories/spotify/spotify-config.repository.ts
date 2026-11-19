@@ -75,8 +75,9 @@ export class SpotifyConfigRepository {
         })
     }
 
-    async delete(guildId: string): Promise<void> {
-        await this.prisma.spotifyConfig.delete({where: {guildId}})
+    async delete(guildId: string): Promise<boolean> {
+        const result = await this.prisma.spotifyConfig.deleteMany({where: {guildId}})
+        return result.count > 0
     }
 
     private async decryptRecord(storedConfig: SpotifyConfigRecord): Promise<SpotifyConfigRecord> {

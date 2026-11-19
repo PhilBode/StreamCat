@@ -16,7 +16,6 @@ export function ColorField({
     onEditStart?: () => void
     onEditEnd?: () => void
 }) {
-    
     const hex = value === "transparent" ? "17182100" : value.slice(1)
     const expanded = hex.length <= 4 ? [...hex].map((character) => character.repeat(2)).join("") : hex
     const rgb = `#${expanded.slice(0, 6)}`
@@ -39,13 +38,10 @@ export function ColorField({
                         aria-label={`${label} bearbeiten`}
                         aria-expanded={popupOpen}
                         onPointerDown={(event) => {
-                            
-                            
                             event.stopPropagation()
                         }}
                         onClick={() => {
                             if (popupOpen) {
-                                
                                 onEditEnd?.()
                                 setPopupOpen(false)
                             } else {

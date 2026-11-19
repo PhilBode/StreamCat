@@ -8,7 +8,8 @@ const CANCEL_MESSAGES: Record<string, string> = {
     reauth: "❌ Re-authentication cancelled.",
     "sr-reward": "❌ Cancelled — reward not saved.",
     notification: "❌ Cancelled — template was not saved.",
-    settings: "❌ Reset cancelled."
+    settings: "❌ Reset cancelled.",
+    disconnect: "❌ Disconnect cancelled."
 }
 
 @Injectable()

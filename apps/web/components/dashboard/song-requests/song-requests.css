@@ -48,7 +48,7 @@
 /* Controls: reward dropdown 280 wide + !sr checkbox. */
 .song-requests-controls {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: var(--space-10);
     flex-wrap: wrap;
@@ -57,17 +57,30 @@
     width: 280px;
 }
 .song-requests-skeleton {
-    min-height: 64px;
-    animation: song-requests-pulse 1.6s ease-in-out infinite;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
 }
-@keyframes song-requests-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.4;
-    }
+.song-requests-dropdown-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 280px;
+}
+.song-requests-label-skeleton {
+    width: 150px;
+    height: 12px;
+}
+.song-requests-field-skeleton {
+    height: 36px;
+}
+.song-requests-checkbox-skeleton {
+    width: 207px;
+    height: 16px;
+}
+.song-requests-accordion-skeleton {
+    width: 100%;
+    height: 36px;
 }
 .song-queue {
     display: flex;
@@ -78,9 +91,20 @@
     flex-direction: column;
 }
 .song-queue-list {
+    max-height: 243px;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     list-style: none;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-2) transparent;
+}
+.song-queue-list::-webkit-scrollbar {
+    width: 6px;
+}
+.song-queue-list::-webkit-scrollbar-thumb {
+    background: var(--color-rule-2);
 }
 .song-queue-row {
     display: flex;
@@ -93,9 +117,25 @@
     border-bottom: 0;
     padding-bottom: 0;
 }
-.song-queue-row-skeleton {
-    min-height: 80px;
-    animation: song-requests-pulse 1.6s ease-in-out infinite;
+.song-queue-index-skeleton {
+    flex: none;
+    width: 24px;
+    height: 10px;
+}
+.song-queue-avatar-skeleton {
+    flex: none;
+    width: 48px;
+    height: 48px;
+}
+.song-queue-title-skeleton {
+    width: 220px;
+    max-width: 60%;
+    height: 14px;
+}
+.song-queue-artist-skeleton {
+    width: 140px;
+    max-width: 40%;
+    height: 10px;
 }
 .song-queue-index {
     flex: none;

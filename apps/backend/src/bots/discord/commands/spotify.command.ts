@@ -23,6 +23,9 @@ export class SpotifyCommand implements Command {
                     option.setName("client_secret").setDescription("Client Secret").setRequired(false)
                 )
         )
+        .addSubcommand((sub) =>
+            sub.setName("logout").setDescription("Disconnect Spotify and delete its saved credentials")
+        )
         .addSubcommand((sub) => sub.setName("playing").setDescription("Currently Playing"))
     private logger: ModuleLogger
 
@@ -39,6 +42,12 @@ export class SpotifyCommand implements Command {
         const subcommand = interaction.options.getSubcommand()
         if (subcommand === "playing") {
             await this.handlePlaying(interaction)
+            return
+        }
+        if (subcommand === "logout") {
+            await requireServerAdminOrThrow(interaction)
+            this.logger.info(`Spotify logout requested for guild ${interaction.guildId}`)
+            await this.accountLinking.askDisconnect(interaction, "spotify")
             return
         }
 

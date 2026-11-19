@@ -22,9 +22,9 @@ export type WidgetGeometry = {
     width: number
     height: number
     zIndex: number
-    
+
     label?: string
-    
+
     hidden?: boolean
 }
 
@@ -83,17 +83,16 @@ export interface OverlayLayout {
     width: typeof OVERLAY_WIDTH
     height: typeof OVERLAY_HEIGHT
     theme: OverlayTheme
-    
+
     themeColors?: {
-        
         primary?: string
-        
+
         secondary?: string
-        
+
         surface?: string
-        
+
         window?: string
-        
+
         text?: string
     }
     scene?: OverlayScene

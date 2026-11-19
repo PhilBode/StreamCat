@@ -1,3 +1,4 @@
+import {AccountAlreadyLinkedError} from "../helpers/account-already-linked-error"
 import {oauthFailureMessage, providerFailureReason, type OAuthFailureReason} from "../helpers/oauth-failure"
 import {randomUUID} from "node:crypto"
 import {
@@ -140,6 +141,7 @@ export class OAuthFlowService implements OnModuleDestroy {
             this.logger.info(`OAuth completed provider=${label} guild=${pending.guildId}`)
             return {success: true, returnTo: pending.returnTo}
         } catch (error) {
+            if (error instanceof AccountAlreadyLinkedError) reason = "account_already_linked"
             this.logFailure(error, pending, stage, reason)
             pending.reject(new Error(oauthFailureMessage(label, reason)))
             return {success: false, returnTo: pending.returnTo, reason}

@@ -20,14 +20,13 @@ import {EMPTY_PLAYBACK} from "./renderer"
 import {WidgetSettings} from "./widgets/settings"
 import {SceneControls} from "./scene/scene-controls"
 import {Dialog, SidebarSection} from "./ui/dialog"
-import {CloseIcon} from "./ui/icons"
 import {NewSceneDialog} from "./scene/new-scene-dialog"
 import {SceneSidebar} from "./scene/scene-settings"
 import {DeleteDialog} from "./scene/scene-controls"
 import {AddDialog} from "./assets/add-dialog"
 import {useOverlayAssets} from "./assets/use-overlay-assets"
 import {WidgetLayers, moveWidgetToBackground} from "./widgets/shared/widget-layers"
-import {WIDGET_CATALOG_TYPES, widgetModule, type AddableWidgetType} from "./widgets/registry"
+import {widgetModule, type AddableWidgetType} from "./widgets/registry"
 import {useOverlayScenes} from "./scene/use-overlay-scenes"
 import {isGroupedField} from "./history/use-layout-history"
 import {EditorSkeleton} from "./editor-skeleton"
@@ -79,7 +78,7 @@ function OverlaySession({
     const [chat, setChat] = useState<OverlayChat>(EMPTY_CHAT)
     const [liveError, setLiveError] = useState<string | null>(null)
     const [previewAudio, setPreviewAudio] = useState(false)
-    const [panelTab, setPanelTab] = useState<"layout" | "properties">("properties")
+    const [panelTab, setPanelTab] = useState<"layout" | "properties">("layout")
     const [addDialog, setAddDialog] = useState<"widgets" | "assets" | null>(null)
     const [createDialog, setCreateDialog] = useState(false)
     const [sceneRenaming, setSceneRenaming] = useState(false)
@@ -286,27 +285,22 @@ function OverlaySession({
 
     const selected = layout?.widgets.find((widget) => widget.id === selectedId)
     const link = overlay ? (links[overlay.id] ?? null) : null
-    const designChoices = selected
-        ? Object.values(widgetModule(selected.type).designs).map((item) => ({value: item.id, label: item.label}))
-        : []
     return (
         <>
             {loading && <EditorSkeleton />}
-            {error && (
+            {error && !overlay && (
                 <div className="notice error" role="alert">
                     <p>{error}</p>
-                    {!overlay && (
-                        <div className="actions">
-                            {loginHref && (
-                                <a className="button" href={loginHref}>
-                                    Mit Discord anmelden
-                                </a>
-                            )}
-                            <button className="button" onClick={onRetry}>
-                                Erneut versuchen
-                            </button>
-                        </div>
-                    )}
+                    <div className="actions">
+                        {loginHref && (
+                            <a className="button" href={loginHref}>
+                                Mit Discord anmelden
+                            </a>
+                        )}
+                        <button className="button" onClick={onRetry}>
+                            Erneut versuchen
+                        </button>
+                    </div>
                 </div>
             )}
             {!loading && (!error || overlay) && (
@@ -318,7 +312,6 @@ function OverlaySession({
                     dirty={dirty}
                     obsUrl={link}
                     onSelect={selectScene}
-                    onCreate={(name, scene) => void createScene(name, scene)}
                     onSave={() => void saveScene()}
                     onRotate={() => void rotateScene()}
                     onDelete={(id) => void deleteScene(id)}
@@ -380,15 +373,19 @@ function OverlaySession({
                             <p>Deine Änderungen an „{overlay.name}“ sind noch nicht gespeichert.</p>
                         </Dialog>
                     )}
-                    {(notice || liveError) && (
-                        <div className={`overlay-snackbar ${liveError ? "error" : "success"}`} role="status">
+                    {(error || notice || liveError) && (
+                        <div
+                            className={`overlay-snackbar ${error || liveError ? "error" : "success"}`}
+                            role={error || liveError ? "alert" : "status"}
+                        >
                             <span className="overlay-snackbar-dot" aria-hidden="true" />
-                            <p>{liveError ?? notice}</p>
+                            <p>{error ?? liveError ?? notice}</p>
                             <button
                                 type="button"
                                 className="overlay-icon-button overlay-icon-button--sm"
                                 aria-label="Meldung schließen"
                                 onClick={() => {
+                                    setError(null)
                                     setNotice(null)
                                     setLiveError(null)
                                 }}
@@ -617,14 +614,6 @@ function OverlaySession({
                             defaultTab={addDialog}
                             widgetCount={layout.widgets.length}
                             maxWidgets={MAX_OVERLAY_WIDGETS}
-                            designChoices={
-                                WIDGET_CATALOG_TYPES.length
-                                    ? Object.values(widgetModule(WIDGET_CATALOG_TYPES[0]).designs).map((item) => ({
-                                          value: item.id,
-                                          label: item.label
-                                      }))
-                                    : []
-                            }
                             assets={media.assets}
                             assetsLoading={media.loading}
                             uploading={media.uploading}

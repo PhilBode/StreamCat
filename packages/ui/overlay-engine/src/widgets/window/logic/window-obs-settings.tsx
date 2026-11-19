@@ -10,13 +10,7 @@ const BASE_RESOLUTIONS = [
     {value: "3840", label: "3840 × 2160"}
 ]
 
-export function WindowObsSettings({
-    widget,
-    onChange
-}: {
-    widget: Extract<EditorWidget, {type: "WINDOW"}>
-    onChange: (widget: EditorWidget) => void
-}) {
+export function WindowObsSettings({widget}: {widget: Extract<EditorWidget, {type: "WINDOW"}>}) {
     const [baseWidth, setBaseWidth] = useState(1920)
     const [message, setMessage] = useState<string | null>(null)
     const content = scaleOverlayBounds(windowContentBounds(widget), baseWidth, (baseWidth * 9) / 16)

@@ -7,6 +7,7 @@ export interface StoredOverlay {
     id: string
     name: string
     tokenHash: string
+    browserToken: string | null
     type: OverlayType
     backgroundAssetId: string | null
     settings: JsonValue | null

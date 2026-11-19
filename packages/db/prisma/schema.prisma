@@ -88,7 +88,7 @@ model TwitchReward {
 
 model TwitchAuth {
   guildId      String  @id
-  userId       String
+  userId       String  @unique
   username     String
   accessToken  String
   refreshToken String
@@ -136,10 +136,11 @@ model TwitchBotAccount {
 }
 
 model Overlay {
-  id        String @id @default(cuid())
-  guildId   String
-  name      String @default("Overlay")
-  tokenHash String @unique
+  id           String  @id @default(cuid())
+  guildId      String
+  name         String  @default("Overlay")
+  tokenHash    String  @unique
+  browserToken String?
 
   type              OverlayType @default(DYNAMIC)
   backgroundAssetId String?

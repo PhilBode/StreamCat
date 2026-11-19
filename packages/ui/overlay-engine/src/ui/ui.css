@@ -28,7 +28,7 @@
 .overlay-dialog-subtitle {
     margin: 0;
     color: var(--color-muted, #929292);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.7;
 }
 .overlay-dialog-header-row {
@@ -65,9 +65,39 @@
     gap: 8px;
     padding: 0 20px;
 }
+.overlay-dialog-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.overlay-dialog-field-label {
+    margin: 0;
+    color: var(--color-muted, #929292);
+    font-size: 12px;
+    line-height: 1.4;
+}
+.overlay-dialog-field-value {
+    margin: 0;
+    color: var(--color-ink, #eeeeee);
+    font-size: 13px;
+    line-height: 1.4;
+}
+.overlay-dialog-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.overlay-dialog-info p {
+    margin: 0;
+    color: var(--color-ink-2, #bebebe);
+    font-size: 13px;
+    line-height: 1.5;
+}
 .overlay-dialog-warning {
     margin: 0;
     color: var(--color-danger, #e5484d);
+    font-size: 13px;
+    line-height: 1.5;
 }
 
 .overlay-tab {
