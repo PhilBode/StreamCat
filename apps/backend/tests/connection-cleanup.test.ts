@@ -15,7 +15,7 @@ test("Twitch auth deletion clears auth, rewards, song requests and the main foll
     }
     const repository = new TwitchAuthRepository(prisma as never, {} as never)
 
-    await repository.delete("guild")
+    await repository.deleteConnection("guild")
 
     expect(calls.auth).toEqual({where: {guildId: "guild"}})
     expect(calls.rewards).toEqual({where: {guildId: "guild"}})

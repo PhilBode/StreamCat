@@ -24,10 +24,12 @@ type LoadResult<T> = {data: T | null; error: string | null}
 export function Guild({
     guildId,
     oauthResult,
+    oauthFailureReason,
     spotifyRedirectUri
 }: {
     guildId: string
     oauthResult: string | null
+    oauthFailureReason: string | null
     spotifyRedirectUri: string | null
 }) {
     const [guild, setGuild] = useState<DashboardGuildDetails | null>(null)
@@ -43,6 +45,8 @@ export function Guild({
     const [error, setError] = useState<string | null>(null)
     const [loading, setLoading] = useState(true)
     const [revealed, setRevealed] = useState(false)
+    const [reloadKey, setReloadKey] = useState(0)
+    const [dataVersion, setDataVersion] = useState(0)
 
     useEffect(() => {
         if (loading || error) return
@@ -98,11 +102,17 @@ export function Guild({
             setStreamersError(streamersResult.error)
             setPlayback(playbackResult.data?.playback ?? null)
             setLoading(false)
+            setDataVersion((value) => value + 1)
         }
 
         void load()
         return () => abort.abort()
-    }, [guildId])
+    }, [guildId, reloadKey])
+
+    function handleConnectionsChange(next: DashboardConnections) {
+        setConnections(next)
+        setReloadKey((value) => value + 1)
+    }
 
     return (
         <div className="guild">
@@ -153,10 +163,13 @@ export function Guild({
                                 initialError={connectionsError}
                                 initialPlayback={playback}
                                 oauthResult={oauthResult}
+                                oauthFailureReason={oauthFailureReason}
                                 spotifyRedirectUri={spotifyRedirectUri}
+                                onConnectionsChange={handleConnectionsChange}
                             />
                             <div className="guild-row">
                                 <SongRequests
+                                    key={`song-requests-${dataVersion}`}
                                     guildId={guild.id}
                                     initialSettings={songRequests}
                                     initialSettingsError={songRequestsError}
@@ -165,6 +178,7 @@ export function Guild({
                                     connections={connectionsError ? undefined : connections}
                                 />
                                 <FollowedStreamers
+                                    key={`followed-streamers-${dataVersion}`}
                                     guildId={guild.id}
                                     initialStreamers={streamers}
                                     initialError={streamersError}

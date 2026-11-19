@@ -45,7 +45,7 @@ export function SongRequests({
     const lifetime = useRef<AbortController | null>(null)
     const path = `/dashboard/guilds/${encodeURIComponent(guildId)}/song-requests`
     const loadError = initialSettingsError ?? initialRewardsError
-    const hasConnectedService = !connections || !!connections.twitch || !!connections.spotify
+    const hasConnectedService = !!connections && (!!connections.twitch || !!connections.spotify)
 
     useEffect(() => {
         const abort = new AbortController()

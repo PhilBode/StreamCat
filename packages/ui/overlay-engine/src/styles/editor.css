@@ -1457,7 +1457,7 @@
 }
 .overlay-ruler span {
     position: absolute;
-    font-size: 12px;
+    font-size: 11px;
     pointer-events: none;
 }
 .overlay-ruler.top span {

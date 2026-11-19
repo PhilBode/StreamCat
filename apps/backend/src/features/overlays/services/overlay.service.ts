@@ -7,7 +7,7 @@ import {
     UnauthorizedException
 } from "@nestjs/common"
 import {createHash, randomBytes, randomUUID} from "node:crypto"
-import {BotLoggerService, frontendUrl, TokenEncryptionService, type ModuleLogger} from "@streamcat/core"
+import {BotLoggerService, errorDetails, frontendUrl, TokenEncryptionService, type ModuleLogger} from "@streamcat/core"
 import {
     overlayPreset,
     OVERLAY_THEME_COLORS,
@@ -76,12 +76,19 @@ export class OverlayService {
     }
 
     async sceneLinks(guildId: string): Promise<Record<string, string>> {
-        const scenes = await this.repository.findScenes(guildId)
+        const scenes = await this.repository.findBrowserTokens(guildId)
         const entries = await Promise.all(
             scenes.map(async (scene) => {
                 if (!scene.browserToken) return null
-                const token = await this.tokenEncryption.decrypt(scene.browserToken)
-                return [scene.id, this.browserSourceUrl(token)] as const
+                try {
+                    const token = await this.tokenEncryption.decrypt(scene.browserToken)
+                    return [scene.id, this.browserSourceUrl(token)] as const
+                } catch (error) {
+                    this.logger.warn(
+                        `Could not restore overlay browser link guild=${guildId} overlay=${scene.id} ${errorDetails(error)}`
+                    )
+                    return null
+                }
             })
         )
         return Object.fromEntries(entries.filter((entry): entry is readonly [string, string] => entry !== null))

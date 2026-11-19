@@ -35,6 +35,41 @@ test("song request controls appear when a service is connected", () => {
     expect(html).toContain("Songs per !sr annehmen")
 })
 
+test("song request controls stay hidden while connections are unknown", () => {
+    const html = renderToStaticMarkup(
+        <SongRequests guildId="100" initialSettings={emptySettings} initialRewards={[]} />
+    )
+    expect(html).not.toContain("Kanalpunkte-Belohnung")
+    expect(html).not.toContain("Songs per !sr annehmen")
+})
+
+test("failed connection loads do not render unconnected cards", () => {
+    const html = renderToStaticMarkup(
+        <Connections
+            guildId="100"
+            initialConnections={null}
+            initialError="Konten konnten nicht geladen werden."
+            initialPlayback={null}
+        />
+    )
+    expect(html).toContain("Verbindungen konnten nicht aktualisiert werden")
+    expect(html).toContain("Erneut versuchen")
+    expect(html).not.toContain("Noch kein Konto")
+})
+
+test("a Twitch account linked elsewhere gets a specific error", () => {
+    const html = renderToStaticMarkup(
+        <Connections
+            guildId="100"
+            initialConnections={noConnections}
+            initialPlayback={null}
+            oauthResult="failed"
+            oauthFailureReason="account_already_linked"
+        />
+    )
+    expect(html).toContain("Dieses Twitch-Konto ist bereits mit einem anderen Server verknüpft.")
+})
+
 test("spotify setup explains where the app credentials come from", () => {
     const html = renderToStaticMarkup(
         <Connections guildId="100" initialConnections={noConnections} initialPlayback={null} />

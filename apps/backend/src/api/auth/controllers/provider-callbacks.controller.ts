@@ -36,6 +36,7 @@ export class ProviderCallbacksController {
                 const url = new URL(result.returnTo)
                 url.searchParams.set("connection", label.toLowerCase())
                 url.searchParams.set("result", result.success ? "success" : "failed")
+                if (result.reason) url.searchParams.set("reason", result.reason)
                 res.redirect(url.toString())
             } else if (result.success) {
                 res.type("html").send(successPage(label))

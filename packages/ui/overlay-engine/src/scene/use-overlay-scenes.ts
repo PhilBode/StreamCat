@@ -51,7 +51,9 @@ export function useOverlayScenes(basePath: string, request: OverlayRequest) {
         lifetime.current = controller
         void Promise.all([
             request<GuildOverlay[]>(`${path}/scenes`, {signal: controller.signal}),
-            request<Record<string, string>>(`${path}/scene-links`, {signal: controller.signal})
+            request<Record<string, string>>(`${path}/scene-links`, {signal: controller.signal}).catch(
+                () => ({}) as Record<string, string>
+            )
         ])
             .then(([result, sceneLinks]) => {
                 if (controller.signal.aborted) return

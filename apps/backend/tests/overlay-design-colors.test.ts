@@ -39,7 +39,10 @@ const overlay = {
 
 const logger = {forModule: () => ({info() {}, warn() {}, error() {}})}
 const service = new OverlayService(
-    {findScenes: async () => [overlay]} as never,
+    {
+        findScenes: async () => [overlay],
+        findBrowserTokens: async () => [{id: overlay.id, browserToken: overlay.browserToken}]
+    } as never,
     {} as never,
     {} as never,
     logger as never,
@@ -55,4 +58,20 @@ test("stored design color overrides survive the dashboard mapping", async () => 
 test("stored browser tokens are returned as scene links", async () => {
     const links = await service.sceneLinks("guild")
     expect(links.scene).toMatch(/\/overlay#browser-token$/)
+})
+
+test("a broken stored browser token does not fail the link list", async () => {
+    const broken = new OverlayService(
+        {findBrowserTokens: async () => [{id: "scene", browserToken: "broken"}]} as never,
+        {} as never,
+        {} as never,
+        logger as never,
+        {} as never,
+        {
+            decrypt: async () => {
+                throw new Error("bad key")
+            }
+        } as never
+    )
+    expect(await broken.sceneLinks("guild")).toEqual({})
 })

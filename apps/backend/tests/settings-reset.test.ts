@@ -44,20 +44,22 @@ test("removing guild auth still reconciles chat after a guild cascade deleted th
     const reconcile = mock(async () => {})
     const unsubscribeFromRedemptions = mock(() => {})
     const deleteAuth = mock(async () => {})
+    const removeUser = mock(() => {})
     const connection = new TwitchConnectionService(
         {} as never,
-        {findByGuildId: async () => null, delete: deleteAuth} as never,
+        {findIdentityByGuildId: async () => null, deleteConnection: deleteAuth} as never,
         {findMainByGuildId: async () => null} as never,
         {clear: async () => {}} as never,
         {reconcile} as never,
         {forModule: () => ({info: mock(() => {})})} as never,
         {unsubscribeFromRedemptions, unsubscribeFromStreamer: async () => {}} as never,
-        {removeUser: () => {}} as never,
+        {removeUser} as never,
         {} as never
     )
     expect(await connection.removeGuildAuth("deleted-guild")).toBe(false)
     expect(unsubscribeFromRedemptions).toHaveBeenCalledWith("deleted-guild")
     expect(deleteAuth).toHaveBeenCalledWith("deleted-guild")
+    expect(removeUser).not.toHaveBeenCalled()
     expect(reconcile).toHaveBeenCalledTimes(1)
 })
 
@@ -69,7 +71,10 @@ test("removing guild auth clears the main streamer follow and Twitch runtime sta
     const removeUser = mock(() => {})
     const connection = new TwitchConnectionService(
         {} as never,
-        {findByGuildId: async () => ({userId: "123", username: "main"}), delete: deleteAuth} as never,
+        {
+            findIdentityByGuildId: async () => ({userId: "123", username: "main"}),
+            deleteConnection: deleteAuth
+        } as never,
         {findMainByGuildId: async () => ({username: "main", channelId: "123"})} as never,
         {clear: async () => {}} as never,
         {reconcile} as never,

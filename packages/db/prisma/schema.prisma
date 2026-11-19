@@ -88,7 +88,7 @@ model TwitchReward {
 
 model TwitchAuth {
   guildId      String  @id
-  userId       String
+  userId       String  @unique
   username     String
   accessToken  String
   refreshToken String

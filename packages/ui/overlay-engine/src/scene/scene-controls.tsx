@@ -109,12 +109,19 @@ export function SceneControls({
                             onClick={onRedo}
                         />
                         <span className="overlay-scene-divider" aria-hidden="true" />
-                        <button type="button" className="button" disabled={busy} onClick={() => void copyUrl()}>
-                            {copied ? "Kopiert ✓" : "OBS-URL kopieren"}
+                        <button
+                            type="button"
+                            className="button"
+                            disabled={busy}
+                            onClick={() => (obsUrl ? void copyUrl() : setDialog("reset"))}
+                        >
+                            {obsUrl ? (copied ? "Kopiert ✓" : "OBS-URL kopieren") : "OBS-URL erzeugen"}
                         </button>
-                        <button type="button" className="button" disabled={busy} onClick={() => setDialog("reset")}>
-                            URL zurücksetzen
-                        </button>
+                        {obsUrl && (
+                            <button type="button" className="button" disabled={busy} onClick={() => setDialog("reset")}>
+                                URL zurücksetzen
+                            </button>
+                        )}
                         <button
                             type="button"
                             className="button"

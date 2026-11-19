@@ -26,7 +26,7 @@ export default async function GuildPage({
     searchParams
 }: {
     params: Promise<{guildId: string}>
-    searchParams: Promise<{result?: string}>
+    searchParams: Promise<{result?: string; reason?: string}>
 }) {
     const [{guildId}, query] = await Promise.all([params, searchParams])
     const name = await guildName(guildId)
@@ -38,6 +38,7 @@ export default async function GuildPage({
                 key={guildId}
                 guildId={guildId}
                 oauthResult={query.result ?? null}
+                oauthFailureReason={query.reason ?? null}
                 spotifyRedirectUri={spotifyRedirectUri}
             />
         </>

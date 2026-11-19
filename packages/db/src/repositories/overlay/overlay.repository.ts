@@ -30,6 +30,13 @@ export class OverlayRepository {
         return this.prisma.overlay.findUnique({where: {id: sceneId, guildId}, include: widgetsInLayerOrder})
     }
 
+    findBrowserTokens(guildId: string): Promise<{id: string; browserToken: string | null}[]> {
+        return this.prisma.overlay.findMany({
+            where: {guildId},
+            select: {id: true, browserToken: true}
+        })
+    }
+
     async deleteScene(guildId: string, sceneId: string): Promise<boolean> {
         const deleted = await this.prisma.overlay.deleteMany({where: {id: sceneId, guildId}})
         return deleted.count > 0
@@ -100,7 +107,7 @@ export class OverlayRepository {
         })
     }
 
-    async rotateToken(guildId: string, sceneId: string, tokenHash: string, browserToken?: string): Promise<void> {
+    async rotateToken(guildId: string, sceneId: string, tokenHash: string, browserToken: string): Promise<void> {
         await this.prisma.overlay.update({where: {id: sceneId, guildId}, data: {tokenHash, browserToken}})
     }
 

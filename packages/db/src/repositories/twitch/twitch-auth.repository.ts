@@ -16,6 +16,13 @@ export class TwitchAuthRepository {
         return this.prisma.twitchAuth.findUnique({where: {guildId}, select: {username: true, userId: true}})
     }
 
+    findIdentityByUserId(userId: string): Promise<{guildId: string; username: string; userId: string} | null> {
+        return this.prisma.twitchAuth.findUnique({
+            where: {userId},
+            select: {guildId: true, username: true, userId: true}
+        })
+    }
+
     async findByGuildId(guildId: string): Promise<TwitchAuthRecord | null> {
         const storedAccount = await this.prisma.twitchAuth.findUnique({where: {guildId}})
         return storedAccount ? this.decryptRecord(storedAccount) : null
@@ -78,7 +85,7 @@ export class TwitchAuthRepository {
         return this.decryptRecord(storedAccount)
     }
 
-    async delete(guildId: string): Promise<void> {
+    async deleteConnection(guildId: string): Promise<void> {
         // Disconnecting Twitch removes everything that belongs to that connection.
         // Followed channels other than the main streamer stay untouched.
         await this.prisma.$transaction([
