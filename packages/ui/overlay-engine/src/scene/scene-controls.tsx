@@ -1,7 +1,7 @@
 "use client"
 
 import {useEffect, useRef, useState} from "react"
-import type {GuildOverlay, OverlayScene} from "@streamcat/interfaces"
+import type {GuildOverlay} from "@streamcat/interfaces"
 import {Dialog, EditorIconButton, Select} from "../ui/dialog"
 import {PlusIcon, RedoIcon, UndoIcon} from "../ui/icons"
 
@@ -12,7 +12,6 @@ export function SceneControls({
     dirty,
     obsUrl,
     onSelect,
-    onCreate,
     onSave,
     onRotate,
     onDelete,
@@ -29,7 +28,6 @@ export function SceneControls({
     dirty: boolean
     obsUrl: string | null
     onSelect: (id: string) => void
-    onCreate: (name: string, scene: OverlayScene) => void
     onSave: () => void
     onRotate: () => void
     onDelete: (id: string) => void

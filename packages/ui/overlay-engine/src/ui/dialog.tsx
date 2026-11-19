@@ -40,7 +40,7 @@ export function useFloatingMenuRect(
         }
         function onKeyDown(event: KeyboardEvent) {
             if (event.key !== "Escape") return
-            
+
             event.stopPropagation()
             close()
         }
@@ -51,7 +51,7 @@ export function useFloatingMenuRect(
         document.addEventListener("keydown", onKeyDown, true)
         document.addEventListener("scroll", onLayout, true)
         window.addEventListener("resize", onLayout)
-        
+
         const observer = new ResizeObserver(onLayout)
         if (rootRef.current) observer.observe(rootRef.current)
         document.fonts?.ready.then(onLayout).catch(() => {})

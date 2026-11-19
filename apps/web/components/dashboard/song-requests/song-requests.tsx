@@ -50,9 +50,7 @@ export function SongRequests({guildId}: {guildId: string}) {
             .then((data) => {
                 if (!abort.signal.aborted) setRewards(data)
             })
-            .catch(() => {
-                
-            })
+            .catch(() => {})
         return () => abort.abort()
     }, [path, settings?.channelId])
 

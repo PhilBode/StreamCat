@@ -127,7 +127,7 @@ test("overlay editor renders from the ui package", () => {
         <OverlayEditor basePath="/dashboard/guilds/1/overlay" request={request} backHref="/dashboard/1" />
     )
     expect(html).toContain("overlay-editor")
-    expect(html).toContain("Overlay gestalten")
+    expect(html).toContain("editor-skeleton")
 })
 
 test("overlay player renders its loading state", () => {

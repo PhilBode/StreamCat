@@ -81,10 +81,7 @@ export function OverlayCanvas({
         const observer = new ResizeObserver(() => {
             // Fit both axes: section padding (24/16/8) + rulers (24px left, 24px top, 1px borders).
             const box = section.getBoundingClientRect()
-            const scale = Math.min(
-                (box.width - 32 - 28) / layout.width,
-                (box.height - 32 - 26) / layout.height
-            )
+            const scale = Math.min((box.width - 32 - 28) / layout.width, (box.height - 32 - 26) / layout.height)
             setScale(Math.max(0, scale))
         })
         observer.observe(section)

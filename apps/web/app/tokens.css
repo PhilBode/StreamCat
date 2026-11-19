@@ -1,7 +1,6 @@
 :root {
     color-scheme: dark;
 
-    
     --color-paper: #000000;
     --color-paper-2: #080808;
     --color-paper-3: #161616;
@@ -26,7 +25,6 @@
     --color-guide-active: #ffffff;
     --color-guide-label: #0a0a0aee;
 
-    
     --font-display: "Departure Mono", "Cat Fallback", ui-monospace, "SFMono-Regular", Consolas, monospace;
     --font-body: var(--font-display);
     --font-outlier: var(--font-display);
@@ -56,18 +54,15 @@
     --space-16: 64px;
     --space-20: 80px;
 
-    
     --container: 1600px;
     --gutter: clamp(16px, 2.5vw, 40px);
     --radius-card: 0;
     --radius-pill: 0;
     --shadow-card: none;
 
-    
     --dur-micro: 120ms;
     --dur-short: 200ms;
 
-    
     --bg: var(--color-paper);
     --panel: var(--color-paper-2);
     --border: var(--color-rule);

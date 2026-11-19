@@ -60,12 +60,12 @@ export function SceneSidebar({
         {value: "winter", label: "Winter"},
         ...(overrides ? [{value: "custom", label: "Custom"}] : [])
     ]
-    const paletteRows: [string, keyof NonNullable<OverlayLayout["themeColors"]>, string, string][] = [
-        ["Primär", "primary", colors.tokens?.["--progress-color"] ?? "#1db954", "100%"],
-        ["Sekundär", "secondary", colors.color, "100%"],
-        ["Fläche", "surface", colors.backgroundColor, alphaLabel(colors.backgroundColor)],
-        ["Fenster", "window", colors.tokens?.["--window-bg"] ?? "#1b191c", "100%"],
-        ["Text", "text", colors.color, "100%"]
+    const paletteRows: [string, keyof NonNullable<OverlayLayout["themeColors"]>, string][] = [
+        ["Primär", "primary", colors.tokens?.["--progress-color"] ?? "#1db954"],
+        ["Sekundär", "secondary", colors.color],
+        ["Fläche", "surface", colors.backgroundColor],
+        ["Fenster", "window", colors.tokens?.["--window-bg"] ?? "#1b191c"],
+        ["Text", "text", colors.color]
     ]
 
     const themeLabelText = overrides ? "Custom" : themeLabel(layout.theme)
@@ -81,7 +81,7 @@ export function SceneSidebar({
                             onChange={(value) => value !== "custom" && changeTheme(value as OverlayTheme)}
                         />
                         <div className="overlay-color-list overlay-scene-palette">
-                            {paletteRows.map(([label, key, fallback, opacity]) => (
+                            {paletteRows.map(([label, key, fallback]) => (
                                 <ColorField
                                     key={label}
                                     label={label}
@@ -213,9 +213,4 @@ function themeLabel(theme: OverlayTheme) {
     if (theme === "autumn") return "Herbst"
     if (theme === "winter") return "Winter"
     return "Standard"
-}
-
-function alphaLabel(backgroundColor: string) {
-    const alpha = backgroundColor.slice(7) || "ff"
-    return `${Math.round((parseInt(alpha, 16) / 255) * 100)}%`
 }

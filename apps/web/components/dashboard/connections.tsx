@@ -57,9 +57,7 @@ export function Connections({guildId}: {guildId: string}) {
                     ""
                 )
                 if (!abort.signal.aborted) setPlayback(data.playback)
-            } catch {
-                
-            }
+            } catch {}
             if (!abort.signal.aborted) timeout = setTimeout(() => void poll(), SONG_POLL_MS)
         }
         void poll()

@@ -333,7 +333,7 @@ export function WidgetSettings({
             </div>
             {widget.type === "WINDOW" && (
                 <div className="overlay-settings-block">
-                    <WindowObsSettings widget={widget} onChange={onChange} />
+                    <WindowObsSettings widget={widget} />
                 </div>
             )}
         </section>

@@ -7,7 +7,6 @@ and an OBS overlay editor. Build scenes with draggable widgets, chat, images and
 
 [MIT](LICENSE)
 
-
 ## Run locally (Bun / VS Code)
 
 You need Bun and Docker.

@@ -20,7 +20,6 @@ import {EMPTY_PLAYBACK} from "./renderer"
 import {WidgetSettings} from "./widgets/settings"
 import {SceneControls} from "./scene/scene-controls"
 import {Dialog, SidebarSection} from "./ui/dialog"
-import {CloseIcon} from "./ui/icons"
 import {NewSceneDialog} from "./scene/new-scene-dialog"
 import {SceneSidebar} from "./scene/scene-settings"
 import {DeleteDialog} from "./scene/scene-controls"
@@ -286,9 +285,6 @@ function OverlaySession({
 
     const selected = layout?.widgets.find((widget) => widget.id === selectedId)
     const link = overlay ? (links[overlay.id] ?? null) : null
-    const designChoices = selected
-        ? Object.values(widgetModule(selected.type).designs).map((item) => ({value: item.id, label: item.label}))
-        : []
     return (
         <>
             {loading && <EditorSkeleton />}
@@ -318,7 +314,6 @@ function OverlaySession({
                     dirty={dirty}
                     obsUrl={link}
                     onSelect={selectScene}
-                    onCreate={(name, scene) => void createScene(name, scene)}
                     onSave={() => void saveScene()}
                     onRotate={() => void rotateScene()}
                     onDelete={(id) => void deleteScene(id)}
