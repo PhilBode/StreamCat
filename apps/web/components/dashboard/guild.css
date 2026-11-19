@@ -122,26 +122,103 @@
     font-size: var(--text-sm);
     line-height: 1.7;
 }
+.guild-body {
+    position: relative;
+}
+.guild-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    opacity: 0;
+    transition: opacity var(--dur-short) ease;
+}
+.guild-content--visible {
+    opacity: 1;
+}
+.guild-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    transition:
+        opacity 180ms ease,
+        visibility 0s linear 200ms;
+}
+.guild-skeleton--leaving {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    visibility: hidden;
+    background: var(--color-paper);
+    opacity: 0;
+    pointer-events: none;
+}
+.guild-skeleton--leaving .skeleton {
+    animation: none;
+}
+.guild-caption-skeleton {
+    width: 153px;
+    height: 12px;
+}
 .guild-avatar-skeleton {
-    display: block;
+    flex: none;
     width: 56px;
     height: 56px;
-    border: 1px solid var(--color-rule);
     border-radius: 50%;
-    animation: guild-pulse 1.6s ease-in-out infinite;
 }
 .guild-name-skeleton {
-    color: var(--color-paper-3);
-    animation: guild-pulse 1.6s ease-in-out infinite;
+    width: 280px;
+    max-width: 60vw;
+    height: 31px;
 }
-@keyframes guild-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.4;
-    }
+.guild-meta-skeleton {
+    width: 200px;
+    height: 12px;
+}
+.guild-action-skeleton {
+    width: 187px;
+    height: 36px;
+}
+.guild-panel-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    min-height: 236px;
+}
+.guild-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+.guild-panel-title {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+.guild-panel-title-skeleton {
+    width: 150px;
+    height: 20px;
+}
+.guild-panel-subtitle-skeleton {
+    width: 220px;
+    height: 12px;
+}
+.guild-panel-control-skeleton {
+    flex: none;
+    width: 44px;
+    height: 24px;
+}
+.guild-panel-lines {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+.guild-panel-line-skeleton {
+    width: 100%;
+    height: 64px;
+}
+.guild-panel-line-skeleton--short {
+    width: 72%;
 }
 
 @media (max-width: 1100px) {

@@ -59,4 +59,9 @@ export class TwitchAuthProvider {
             obtainmentTimestamp: Date.now()
         })
     }
+
+    removeUser(userId: string): void {
+        if (!this.authProvider) return
+        this.authProvider.removeUser(userId)
+    }
 }

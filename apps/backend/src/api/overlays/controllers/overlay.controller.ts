@@ -24,6 +24,12 @@ export class OverlayController {
         return this.overlays.createScene(guildId, body)
     }
 
+    @Get("scene-links")
+    @Header("Cache-Control", "private, no-store")
+    async sceneLinks(@Param("guildId") guildId: string) {
+        return this.overlays.sceneLinks(guildId)
+    }
+
     @Get("scenes/:overlayId")
     @Header("Cache-Control", "private, no-store")
     async scene(@Param("guildId") guildId: string, @Param("overlayId") overlayId: string) {

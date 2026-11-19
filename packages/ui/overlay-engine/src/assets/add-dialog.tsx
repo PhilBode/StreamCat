@@ -17,7 +17,6 @@ export function AddDialog({
     defaultTab,
     widgetCount,
     maxWidgets,
-    designChoices,
     assets,
     assetsLoading,
     uploading,
@@ -32,7 +31,6 @@ export function AddDialog({
     defaultTab: "widgets" | "assets"
     widgetCount: number
     maxWidgets: number
-    designChoices: {value: string; label: string}[]
     assets: OverlayAsset[]
     assetsLoading: boolean
     uploading: boolean
@@ -47,7 +45,7 @@ export function AddDialog({
     const [tab, setTab] = useState<"widgets" | "assets">(defaultTab)
     const [search, setSearch] = useState("")
     const [widgetType, setWidgetType] = useState<AddableWidgetType | null>(null)
-    const [design, setDesign] = useState("default")
+    const [design, setDesign] = useState("")
     const [assetId, setAssetId] = useState<string | null>(null)
     const [asBackground, setAsBackground] = useState(false)
     const [fit, setFit] = useState<"contain" | "cover">("contain")
@@ -80,7 +78,16 @@ export function AddDialog({
 
     const widgetFull = widgetCount >= maxWidgets
     const selectedAsset = assets.find((asset) => asset.id === assetId) ?? null
-    const designApplies = widgetType !== "TWITCH_CHAT"
+    const selectedModule = widgetType ? widgetModule(widgetType) : null
+    const designOptions = selectedModule
+        ? Object.values(selectedModule.designs).map((item) => ({value: item.id, label: item.label}))
+        : []
+    const selectedDesign = design || selectedModule?.defaultDesign || ""
+
+    function selectWidget(type: AddableWidgetType) {
+        setWidgetType(type)
+        setDesign(widgetModule(type).defaultDesign)
+    }
 
     return (
         <Dialog
@@ -91,34 +98,47 @@ export function AddDialog({
                     : "Dateien auswählen, Platzierung festlegen, dann hinzufügen."
             }
             onClose={onClose}
-            width={880}
+            width={1080}
             footer={
-                <>
-                    <button type="button" className="button" onClick={onClose}>
-                        Abbrechen
-                    </button>
-                    <button
-                        type="button"
-                        className="button primary"
-                        disabled={
-                            tab === "widgets"
-                                ? !widgetType || widgetFull
-                                : !selectedAsset || uploading || deletingId !== null
-                        }
-                        onClick={() => {
-                            if (tab === "widgets" && widgetType) {
-                                onAddWidget(widgetType, designApplies ? design : "default")
-                                onClose()
+                <div className="overlay-add-footer">
+                    <div className="overlay-add-footer-leading">
+                        {tab === "widgets" && selectedModule && (
+                            <Select
+                                inline
+                                label="Design"
+                                value={selectedDesign}
+                                options={designOptions}
+                                onChange={setDesign}
+                            />
+                        )}
+                    </div>
+                    <div className="overlay-add-footer-actions">
+                        <button type="button" className="button" onClick={onClose}>
+                            Abbrechen
+                        </button>
+                        <button
+                            type="button"
+                            className="button primary"
+                            disabled={
+                                tab === "widgets"
+                                    ? !widgetType || widgetFull
+                                    : !selectedAsset || uploading || deletingId !== null
                             }
-                            if (tab === "assets" && selectedAsset) {
-                                onAddAsset(selectedAsset, asBackground, fit)
-                                onClose()
-                            }
-                        }}
-                    >
-                        Hinzufügen
-                    </button>
-                </>
+                            onClick={() => {
+                                if (tab === "widgets" && widgetType) {
+                                    onAddWidget(widgetType, selectedDesign)
+                                    onClose()
+                                }
+                                if (tab === "assets" && selectedAsset) {
+                                    onAddAsset(selectedAsset, asBackground, fit)
+                                    onClose()
+                                }
+                            }}
+                        >
+                            Hinzufügen
+                        </button>
+                    </div>
+                </div>
             }
         >
             <div className="overlay-add-tabs" role="tablist" aria-label="Hinzufügen">
@@ -165,21 +185,18 @@ export function AddDialog({
                                 key={type}
                                 type="button"
                                 className={`overlay-add-widget-card ${widgetType === type ? "overlay-add-widget-card--active" : ""}`}
-                                onClick={() => setWidgetType(type)}
+                                onClick={() => selectWidget(type)}
                             >
                                 <span className="overlay-add-widget-glyph" aria-hidden="true">
                                     {type === "SPOTIFY_NOW_PLAYING" ? "♫" : type === "TWITCH_CHAT" ? "#" : "▣"}
                                 </span>
                                 <span className="overlay-add-widget-label">{widgetModule(type).label}</span>
                                 <span className="overlay-add-widget-designs">
-                                    {type === "TWITCH_CHAT" ? "2 Designs" : "3 Designs"}
+                                    {Object.keys(widgetModule(type).designs).length} Designs
                                 </span>
                             </button>
                         ))}
                     </div>
-                    {designApplies && (
-                        <Select label="Design" value={design} options={designChoices} onChange={setDesign} />
-                    )}
                 </div>
             )}
 

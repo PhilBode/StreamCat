@@ -211,10 +211,11 @@ export class SpotifyService implements ISpotifyService, OnModuleDestroy {
         this.instances.delete(guildId)
     }
 
-    async disconnectGuild(guildId: string): Promise<void> {
+    async disconnectGuild(guildId: string): Promise<boolean> {
         this.removeGuildInstance(guildId)
-        await this.spotifyConfigRepo.delete(guildId)
-        this.logger.info(`Spotify connection removed guild=${guildId}`)
+        const removed = await this.spotifyConfigRepo.delete(guildId)
+        if (removed) this.logger.info(`Spotify connection removed guild=${guildId}`)
+        return removed
     }
 
     async onModuleDestroy(): Promise<void> {

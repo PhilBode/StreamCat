@@ -32,12 +32,14 @@ import {UnfollowSubCommand} from "./commands/twitch/unfollow.sub-command"
 import {SetMessageSubCommand} from "./commands/twitch/set-message.sub-command"
 import {PostLiveSubCommand} from "./commands/twitch/post-live.sub-command"
 import {LoginSubCommand} from "./commands/twitch/login.sub-command"
+import {LogoutSubCommand} from "./commands/twitch/logout.sub-command"
 import {SetSrRewardSubCommand} from "./commands/twitch/set-sr-reward.sub-command"
 import {TrackedSubCommand} from "./commands/twitch/tracked.sub-command"
 import {BUTTON_HANDLERS, SELECT_MENU_HANDLERS} from "./interactions/interaction.types"
 import {GenericCancelHandler} from "./interactions/generic-cancel.handler"
 import {NotificationConfirmHandler} from "./notifications/notification-confirm.handler"
 import {ReauthConfirmHandler} from "./interactions/reauth-confirm.handler"
+import {DisconnectConfirmHandler} from "./interactions/disconnect-confirm.handler"
 import {SettingsConfirmHandler} from "./interactions/settings-confirm.handler"
 import {SrRewardConfirmHandler} from "./interactions/sr-reward-confirm.handler"
 import {SrRewardSelectHandler} from "./interactions/sr-reward-select.handler"
@@ -62,11 +64,13 @@ const TWITCH_SUB_COMMAND_PROVIDERS = [
     SetMessageSubCommand,
     PostLiveSubCommand,
     LoginSubCommand,
+    LogoutSubCommand,
     SetSrRewardSubCommand,
     TrackedSubCommand
 ] as const
 
 const BUTTON_HANDLER_PROVIDERS = [
+    DisconnectConfirmHandler,
     GenericCancelHandler,
     NotificationConfirmHandler,
     ReauthConfirmHandler,

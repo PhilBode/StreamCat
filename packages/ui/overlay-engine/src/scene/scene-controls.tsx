@@ -51,7 +51,9 @@ export function SceneControls({
 
     async function copyUrl() {
         if (!obsUrl) {
-            onError("Für diese Szene gibt es noch keinen OBS-Link. Erstelle oder speichere die Szene zuerst.")
+            onError(
+                "Für diese Szene ist kein OBS-Link gespeichert. Setze die OBS-URL zurück, um einen neuen Link zu erzeugen."
+            )
             return
         }
         try {
@@ -116,7 +118,7 @@ export function SceneControls({
                         <button
                             type="button"
                             className="button"
-                            disabled={busy}
+                            disabled={busy || !obsUrl}
                             onClick={() => obsUrl && window.open(obsUrl, "_blank", "noopener")}
                         >
                             Vorschau öffnen
@@ -154,9 +156,14 @@ export function SceneControls({
                         </>
                     }
                 >
-                    <p className="overlay-dialog-field-label">Szene</p>
-                    <p>{selected.name}</p>
-                    <p className="overlay-dialog-warning">Das lässt sich nicht rückgängig machen.</p>
+                    <div className="overlay-dialog-field">
+                        <p className="overlay-dialog-field-label">Szene</p>
+                        <p className="overlay-dialog-field-value">{selected.name}</p>
+                    </div>
+                    <div className="overlay-dialog-info">
+                        <p>Der Link von dieser Szene wird zurückgesetzt. Alle alten Links verlieren ihre Gültigkeit.</p>
+                        <p className="overlay-dialog-warning">Das lässt sich nicht rückgängig machen.</p>
+                    </div>
                 </Dialog>
             )}
         </div>
@@ -197,10 +204,14 @@ export function DeleteDialog({
                 </>
             }
         >
-            <p className="overlay-dialog-field-label">Szene</p>
-            <p>{selected.name}</p>
-            <p>Die Szene und alle enthaltenen Widgets werden dauerhaft gelöscht.</p>
-            <p className="overlay-dialog-warning">Das lässt sich nicht rückgängig machen.</p>
+            <div className="overlay-dialog-field">
+                <p className="overlay-dialog-field-label">Szene</p>
+                <p className="overlay-dialog-field-value">{selected.name}</p>
+            </div>
+            <div className="overlay-dialog-info">
+                <p>Die Szene und alle enthaltenen Widgets werden dauerhaft gelöscht.</p>
+                <p className="overlay-dialog-warning">Das lässt sich nicht rückgängig machen.</p>
+            </div>
         </Dialog>
     )
 }

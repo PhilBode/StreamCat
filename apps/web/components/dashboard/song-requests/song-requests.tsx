@@ -1,11 +1,18 @@
 "use client"
 
 import {useEffect, useRef, useState} from "react"
-import type {SongRequestReward, SongRequestSettings, SongRequestUpdate, SpotifyQueue} from "@streamcat/interfaces"
+import type {
+    DashboardConnections,
+    SongRequestReward,
+    SongRequestSettings,
+    SongRequestUpdate,
+    SpotifyQueue
+} from "@streamcat/interfaces"
 import {apiRequest, postJson} from "../../../lib/api"
 import {Accordion} from "../../ui/accordion"
 import {Checkbox} from "../../ui/checkbox"
 import {Dropdown} from "../../ui/dropdown"
+import {Skeleton} from "../../ui/skeleton"
 import {Switch} from "../../ui/switch"
 import {useTemporaryMessage} from "../use-temporary-message"
 import {ProfileAvatar} from "../profile-avatar"
@@ -13,34 +20,55 @@ import "./song-requests.css"
 
 const QUEUE_REFRESH_MS = 15_000
 
-export function SongRequests({guildId}: {guildId: string}) {
-    const [settings, setSettings] = useState<SongRequestSettings | null>(null)
-    const [rewards, setRewards] = useState<SongRequestReward[]>([])
+type SongRequestsProps = {
+    guildId: string
+    initialSettings?: SongRequestSettings | null
+    initialSettingsError?: string | null
+    initialRewards?: SongRequestReward[]
+    initialRewardsError?: string | null
+    connections?: DashboardConnections | null
+}
+
+export function SongRequests({
+    guildId,
+    initialSettings,
+    initialSettingsError,
+    initialRewards,
+    initialRewardsError,
+    connections
+}: SongRequestsProps) {
+    const hasInitialSettings = initialSettings !== undefined
+    const [settings, setSettings] = useState<SongRequestSettings | null>(initialSettings ?? null)
+    const [rewards, setRewards] = useState<SongRequestReward[]>(initialRewards ?? [])
     const [pending, setPending] = useState(false)
     const [error, setError] = useTemporaryMessage()
     const lifetime = useRef<AbortController | null>(null)
     const path = `/dashboard/guilds/${encodeURIComponent(guildId)}/song-requests`
+    const loadError = initialSettingsError ?? initialRewardsError
+    const hasConnectedService = !connections || !!connections.twitch || !!connections.spotify
 
     useEffect(() => {
         const abort = new AbortController()
         lifetime.current = abort
-        void apiRequest<SongRequestSettings>(
-            path,
-            {signal: abort.signal},
-            "Song Requests konnten nicht geladen werden."
-        )
-            .then((data) => {
-                if (!abort.signal.aborted) setSettings(data)
-            })
-            .catch((cause) => {
-                if (!abort.signal.aborted)
-                    setError(cause instanceof Error ? cause.message : "Song Requests konnten nicht geladen werden.")
-            })
+        if (!hasInitialSettings) {
+            void apiRequest<SongRequestSettings>(
+                path,
+                {signal: abort.signal},
+                "Song Requests konnten nicht geladen werden."
+            )
+                .then((data) => {
+                    if (!abort.signal.aborted) setSettings(data)
+                })
+                .catch((cause) => {
+                    if (!abort.signal.aborted)
+                        setError(cause instanceof Error ? cause.message : "Song Requests konnten nicht geladen werden.")
+                })
+        }
         return () => abort.abort()
-    }, [path, setError])
+    }, [path, setError, hasInitialSettings])
 
     useEffect(() => {
-        if (!settings?.channelId) return
+        if (initialRewards !== undefined || !settings?.channelId) return
         const abort = new AbortController()
         void apiRequest<SongRequestReward[]>(
             `${path}/rewards`,
@@ -52,7 +80,7 @@ export function SongRequests({guildId}: {guildId: string}) {
             })
             .catch(() => {})
         return () => abort.abort()
-    }, [path, settings?.channelId])
+    }, [path, settings?.channelId, initialRewards])
 
     async function save(update: SongRequestUpdate) {
         const abort = lifetime.current
@@ -79,7 +107,7 @@ export function SongRequests({guildId}: {guildId: string}) {
     }
 
     const canConfigure = !!settings?.channelId && settings.assigned && !pending
-    const loading = !settings && !error
+    const loading = !hasInitialSettings && !settings && !error
     const selectedRewardId = settings?.rewardIds[0] ?? null
 
     return (
@@ -113,7 +141,17 @@ export function SongRequests({guildId}: {guildId: string}) {
                     className="song-requests-skeleton"
                     role="status"
                     aria-label="Song-Request-Einstellungen werden geladen"
-                />
+                >
+                    <div className="song-requests-controls">
+                        <div className="song-requests-dropdown-skeleton">
+                            <Skeleton className="song-requests-label-skeleton" />
+                            <Skeleton className="song-requests-field-skeleton" />
+                        </div>
+                        <Skeleton className="song-requests-checkbox-skeleton" />
+                    </div>
+                    <div className="panel-rule" />
+                    <Skeleton className="song-requests-accordion-skeleton" />
+                </div>
             ) : (
                 <>
                     {settings && !settings.channelId && (
@@ -124,31 +162,35 @@ export function SongRequests({guildId}: {guildId: string}) {
                             Dieser Server ist noch nicht für Song Requests in diesem Twitch-Kanal zuständig.
                         </p>
                     )}
-                    {error && (
+                    {(error ?? loadError) && (
                         <p className="song-requests-hint song-requests-hint--error" role="alert">
-                            {error}
+                            {error ?? loadError}
                         </p>
                     )}
-                    <div className="song-requests-controls">
-                        <Dropdown
-                            label="Kanalpunkte-Belohnung"
-                            value={selectedRewardId}
-                            options={rewards.map((reward) => ({
-                                value: reward.id,
-                                label: `${reward.title} · ${reward.cost} Punkte`
-                            }))}
-                            disabled={!canConfigure}
-                            onChange={(rewardId) => void save({rewardIds: [rewardId]})}
-                        />
-                        <Checkbox
-                            checked={settings?.chatCommandEnabled ?? false}
-                            disabled={!canConfigure}
-                            onChange={(event) => void save({chatCommandEnabled: event.target.checked})}
-                        >
-                            Songs per !sr annehmen
-                        </Checkbox>
-                    </div>
-                    <div className="panel-rule" aria-hidden="true" />
+                    {hasConnectedService && (
+                        <>
+                            <div className="song-requests-controls">
+                                <Dropdown
+                                    label="Kanalpunkte-Belohnung"
+                                    value={selectedRewardId}
+                                    options={rewards.map((reward) => ({
+                                        value: reward.id,
+                                        label: `${reward.title} · ${reward.cost} Punkte`
+                                    }))}
+                                    disabled={!canConfigure}
+                                    onChange={(rewardId) => void save({rewardIds: [rewardId]})}
+                                />
+                                <Checkbox
+                                    checked={settings?.chatCommandEnabled ?? false}
+                                    disabled={!canConfigure}
+                                    onChange={(event) => void save({chatCommandEnabled: event.target.checked})}
+                                >
+                                    Songs per !sr annehmen
+                                </Checkbox>
+                            </div>
+                            <div className="panel-rule" aria-hidden="true" />
+                        </>
+                    )}
                     {settings?.channelId && <QueueAccordion guildId={guildId} />}
                 </>
             )}
@@ -207,7 +249,14 @@ function QueueContents({guildId}: {guildId: string}) {
         return (
             <div className="song-queue-skeleton" role="status" aria-label="Spotify-Queue wird geladen">
                 {[0, 1, 2].map((index) => (
-                    <div className="song-queue-row song-queue-row-skeleton" key={index} aria-hidden="true" />
+                    <div className="song-queue-row" key={index} aria-hidden="true">
+                        <Skeleton className="song-queue-index-skeleton" />
+                        <Skeleton className="song-queue-avatar-skeleton" />
+                        <div className="song-queue-text">
+                            <Skeleton className="song-queue-title-skeleton" />
+                            <Skeleton className="song-queue-artist-skeleton" />
+                        </div>
+                    </div>
                 ))}
             </div>
         )

@@ -15,6 +15,24 @@
     flex-direction: column;
     gap: var(--space-3);
 }
+.servers-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+.servers-count {
+    flex: none;
+    color: var(--color-muted);
+    font-size: var(--text-xs);
+    line-height: 1;
+    white-space: nowrap;
+}
+.servers-count-skeleton {
+    flex: none;
+    width: 62px;
+    height: 12px;
+}
 .servers-heading h1 {
     margin: 0;
     color: var(--color-ink);
@@ -33,14 +51,32 @@
     height: 1px;
     background: var(--color-rule);
 }
-.servers-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    color: var(--color-muted);
-    font-size: var(--text-xs);
-    line-height: 1;
+.servers-body {
+    position: relative;
+}
+.servers-content {
+    opacity: 0;
+    transition: opacity var(--dur-short) ease;
+}
+.servers-content--visible {
+    opacity: 1;
+}
+.servers-skeleton {
+    transition:
+        opacity 180ms ease,
+        visibility 0s linear 200ms;
+}
+.servers-skeleton--leaving {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    visibility: hidden;
+    background: var(--color-paper);
+    opacity: 0;
+    pointer-events: none;
+}
+.servers-skeleton--leaving .skeleton {
+    animation: none;
 }
 
 .servers-grid {
@@ -152,17 +188,26 @@
     display: flex;
     gap: var(--space-3);
 }
-.server-card-skeleton {
-    animation: server-pulse 1.6s ease-in-out infinite;
+.server-card-skeleton .server-card-text {
+    flex: 1;
 }
-@keyframes server-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.4;
-    }
+.server-card-avatar-skeleton {
+    flex: none;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+}
+.server-card-name-skeleton {
+    width: 70%;
+    height: 20px;
+}
+.server-card-status-skeleton {
+    width: 42%;
+    height: 10px;
+}
+.server-card-button-skeleton {
+    width: 150px;
+    height: 36px;
 }
 
 @media (max-width: 1100px) {
@@ -174,9 +219,7 @@
     .servers-grid {
         grid-template-columns: 1fr;
     }
-    .servers-meta {
-        flex-direction: column;
+    .servers-heading-row {
         align-items: flex-start;
-        gap: var(--space-2);
     }
 }

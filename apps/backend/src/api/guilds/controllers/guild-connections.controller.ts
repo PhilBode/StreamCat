@@ -71,12 +71,11 @@ export class GuildConnectionsController {
         @Param("provider") provider: string
     ): Promise<{success: boolean}> {
         if (provider !== "spotify" && provider !== "twitch") throw new BadRequestException("Unbekannter Anbieter.")
-        if (provider === "spotify") {
-            await this.spotify.disconnectGuild(guildId)
-        } else {
-            await this.twitchAuth.removeGuildAuth(guildId)
-        }
-        return {success: true}
+        const success =
+            provider === "spotify"
+                ? await this.spotify.disconnectGuild(guildId)
+                : await this.twitchAuth.removeGuildAuth(guildId)
+        return {success}
     }
 
     @Post(":provider")

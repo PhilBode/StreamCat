@@ -53,6 +53,9 @@ export class TwitchCommand implements Command {
         )
         .addSubcommand((sub) => sub.setName("login").setDescription("Authorize Twitch for this server"))
         .addSubcommand((sub) =>
+            sub.setName("logout").setDescription("Disconnect Twitch and delete its saved connection data")
+        )
+        .addSubcommand((sub) =>
             sub
                 .setName("set-sr-reward")
                 .setDescription("Set the channel point reward ID for song requests")

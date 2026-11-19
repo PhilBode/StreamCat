@@ -114,17 +114,6 @@ export function SceneSidebar({
                         </SidebarSection>
                     </div>
                     <div className="overlay-settings-block">
-                        <SidebarSection label="In OBS ausrichten">
-                            <div className="overlay-field">
-                                <span className="overlay-field-label">OBS-Basisauflösung</span>
-                                <input className="overlay-field-input" value="1920 × 1080" readOnly disabled />
-                            </div>
-                            <p className="overlay-settings-hint">
-                                Die Ausgabe skaliert auf die Auflösung deiner OBS-Browser-Quelle.
-                            </p>
-                        </SidebarSection>
-                    </div>
-                    <div className="overlay-settings-block">
                         <SidebarSection label="Startlayout">
                             <Select
                                 label="Vorlage"

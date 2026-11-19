@@ -28,6 +28,7 @@ test("management commands require owner or Administrator, not ManageGuild alone"
         "follow",
         "unfollow",
         "login",
+        "logout",
         "post-live",
         "set-sr-reward",
         "set-main-message",

@@ -66,15 +66,20 @@ export class TwitchConnectionService {
         this.logger.info(`Guild auth added for ${guildId} (user ${userId})`)
     }
 
-    async removeGuildAuth(guildId: string): Promise<void> {
+    async removeGuildAuth(guildId: string): Promise<boolean> {
+        const [auth, mainStreamer] = await Promise.all([
+            this.authRepo.findByGuildId(guildId),
+            this.configRepo.findMainByGuildId(guildId)
+        ])
         this.events.unsubscribeFromRedemptions(guildId)
-        const auth = await this.authRepo.findByGuildId(guildId)
         await this.authRepo.delete(guildId)
-        await this.requests.clear(guildId)
+        if (mainStreamer) await this.events.unsubscribeFromStreamer(mainStreamer.channelId)
         if (auth) {
+            this.twitchAuth.removeUser(auth.userId)
             this.logger.info(`Removed guild auth for ${guildId} (user ${auth.userId})`)
         }
         await this.chat.reconcile()
+        return Boolean(auth || mainStreamer)
     }
 
     private async saveConnection(guildId: string, token: TwitchToken): Promise<void> {

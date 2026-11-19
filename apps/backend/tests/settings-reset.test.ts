@@ -47,17 +47,42 @@ test("removing guild auth still reconciles chat after a guild cascade deleted th
     const connection = new TwitchConnectionService(
         {} as never,
         {findByGuildId: async () => null, delete: deleteAuth} as never,
-        {} as never,
+        {findMainByGuildId: async () => null} as never,
         {clear: async () => {}} as never,
         {reconcile} as never,
         {forModule: () => ({info: mock(() => {})})} as never,
-        {unsubscribeFromRedemptions} as never,
-        {} as never,
+        {unsubscribeFromRedemptions, unsubscribeFromStreamer: async () => {}} as never,
+        {removeUser: () => {}} as never,
         {} as never
     )
-    await connection.removeGuildAuth("deleted-guild")
+    expect(await connection.removeGuildAuth("deleted-guild")).toBe(false)
     expect(unsubscribeFromRedemptions).toHaveBeenCalledWith("deleted-guild")
     expect(deleteAuth).toHaveBeenCalledWith("deleted-guild")
+    expect(reconcile).toHaveBeenCalledTimes(1)
+})
+
+test("removing guild auth clears the main streamer follow and Twitch runtime state", async () => {
+    const reconcile = mock(async () => {})
+    const unsubscribeFromRedemptions = mock(() => {})
+    const unsubscribeFromStreamer = mock(async () => {})
+    const deleteAuth = mock(async () => {})
+    const removeUser = mock(() => {})
+    const connection = new TwitchConnectionService(
+        {} as never,
+        {findByGuildId: async () => ({userId: "123", username: "main"}), delete: deleteAuth} as never,
+        {findMainByGuildId: async () => ({username: "main", channelId: "123"})} as never,
+        {clear: async () => {}} as never,
+        {reconcile} as never,
+        {forModule: () => ({info: mock(() => {})})} as never,
+        {unsubscribeFromRedemptions, unsubscribeFromStreamer} as never,
+        {removeUser} as never,
+        {} as never
+    )
+    expect(await connection.removeGuildAuth("guild")).toBe(true)
+    expect(deleteAuth).toHaveBeenCalledWith("guild")
+    expect(unsubscribeFromRedemptions).toHaveBeenCalledWith("guild")
+    expect(unsubscribeFromStreamer).toHaveBeenCalledWith("123")
+    expect(removeUser).toHaveBeenCalledWith("123")
     expect(reconcile).toHaveBeenCalledTimes(1)
 })
 

@@ -7,12 +7,25 @@ import {Accordion} from "../../ui/accordion"
 import {Button} from "../../ui/button"
 import {IconButton} from "../../ui/button"
 import {CloseIcon} from "../../icons"
+import {Skeleton} from "../../ui/skeleton"
 import {TextInput} from "../../ui/text-input"
 import {ProfileAvatar} from "../profile-avatar"
 import {useTemporaryMessage} from "../use-temporary-message"
 import "./followed-streamers.css"
 
-export function FollowedStreamers({guildId}: {guildId: string}) {
+type FollowedStreamersProps = {
+    guildId: string
+    initialStreamers?: FollowedTwitchStreamer[]
+    initialError?: string | null
+    ownChannel?: string | null
+}
+
+export function FollowedStreamers({
+    guildId,
+    initialStreamers,
+    initialError,
+    ownChannel: initialOwnChannel
+}: FollowedStreamersProps) {
     return (
         <section className="panel followed-streamers">
             <div className="followed-streamers-heading">
@@ -22,20 +35,36 @@ export function FollowedStreamers({guildId}: {guildId: string}) {
                 </div>
             </div>
             <div className="panel-rule" aria-hidden="true" />
-            <FollowedStreamerList guildId={guildId} />
+            <FollowedStreamerList
+                guildId={guildId}
+                initialStreamers={initialStreamers}
+                initialError={initialError}
+                initialOwnChannel={initialOwnChannel}
+            />
         </section>
     )
 }
 
-function FollowedStreamerList({guildId}: {guildId: string}) {
-    const [streamers, setStreamers] = useState<FollowedTwitchStreamer[] | null>(null)
-    const [ownChannel, setOwnChannel] = useState<string | null>(null)
+function FollowedStreamerList({
+    guildId,
+    initialStreamers,
+    initialError,
+    initialOwnChannel
+}: {
+    guildId: string
+    initialStreamers?: FollowedTwitchStreamer[]
+    initialError?: string | null
+    initialOwnChannel?: string | null
+}) {
+    const [streamers, setStreamers] = useState<FollowedTwitchStreamer[] | null>(initialStreamers ?? null)
+    const [ownChannel, setOwnChannel] = useState<string | null>(initialOwnChannel ?? null)
     const [username, setUsername] = useState("")
     const [saving, setSaving] = useState(false)
     const [error, setError] = useTemporaryMessage()
     const path = `/dashboard/guilds/${encodeURIComponent(guildId)}/twitch/streamers`
 
     useEffect(() => {
+        if (initialStreamers !== undefined) return
         const abort = new AbortController()
         void apiRequest<FollowedTwitchStreamer[]>(path, {signal: abort.signal}, "Kanäle konnten nicht geladen werden.")
             .then((data) => {
@@ -45,6 +74,12 @@ function FollowedStreamerList({guildId}: {guildId: string}) {
                 if (!abort.signal.aborted)
                     setError(cause instanceof Error ? cause.message : "Kanäle konnten nicht geladen werden.")
             })
+        return () => abort.abort()
+    }, [path, setError, initialStreamers])
+
+    useEffect(() => {
+        if (initialOwnChannel !== undefined) return
+        const abort = new AbortController()
         void apiRequest<{twitch: {username: string} | null}>(
             `/dashboard/guilds/${encodeURIComponent(guildId)}/connections`,
             {signal: abort.signal},
@@ -55,7 +90,7 @@ function FollowedStreamerList({guildId}: {guildId: string}) {
             })
             .catch(() => {})
         return () => abort.abort()
-    }, [path, guildId, setError])
+    }, [guildId, initialOwnChannel])
 
     const visible = (streamers ?? []).filter(
         (streamer) => streamer.username.toLowerCase() !== ownChannel?.toLowerCase()
@@ -100,7 +135,8 @@ function FollowedStreamerList({guildId}: {guildId: string}) {
         }
     }
 
-    const loading = !streamers && !error
+    const loading = initialStreamers === undefined && !streamers && !error
+    const message = error ?? initialError
 
     return (
         <>
@@ -120,14 +156,24 @@ function FollowedStreamerList({guildId}: {guildId: string}) {
                     Kanal hinzufügen
                 </Button>
             </form>
-            {error && (
+            {message && (
                 <p className="followed-streamers-hint followed-streamers-hint--error" role="alert">
-                    {error}
+                    {message}
                 </p>
             )}
             <div className="panel-rule" aria-hidden="true" />
             {loading ? (
-                <div className="followed-streamers-skeleton" role="status" aria-label="Kanäle werden geladen" />
+                <div className="followed-streamers-skeleton" role="status" aria-label="Kanäle werden geladen">
+                    {[0, 1, 2].map((index) => (
+                        <div className="followed-streamers-row" key={index} aria-hidden="true">
+                            <Skeleton className="followed-streamers-avatar-skeleton" />
+                            <div className="followed-streamers-text">
+                                <Skeleton className="followed-streamers-name-skeleton" />
+                                <Skeleton className="followed-streamers-handle-skeleton" />
+                            </div>
+                        </div>
+                    ))}
+                </div>
             ) : (
                 <Accordion label={`Gefolgte Kanäle · ${visible.length}`}>
                     <div className="followed-streamers-list">

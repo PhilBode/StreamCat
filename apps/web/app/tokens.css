@@ -25,7 +25,7 @@
     --color-guide-active: #ffffff;
     --color-guide-label: #0a0a0aee;
 
-    --font-display: "Departure Mono", "Cat Fallback", ui-monospace, "SFMono-Regular", Consolas, monospace;
+    --font-display: "Departure Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
     --font-body: var(--font-display);
     --font-outlier: var(--font-display);
 

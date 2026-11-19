@@ -42,22 +42,39 @@
     color: var(--color-danger);
 }
 .followed-streamers-skeleton {
-    min-height: 64px;
-    animation: followed-pulse 1.6s ease-in-out infinite;
+    display: flex;
+    flex-direction: column;
 }
-@keyframes followed-pulse {
-    0%,
-    100% {
-        opacity: 1;
-    }
-    50% {
-        opacity: 0.4;
-    }
+.followed-streamers-avatar-skeleton {
+    flex: none;
+    width: 48px;
+    height: 48px;
+}
+.followed-streamers-name-skeleton {
+    width: 180px;
+    max-width: 60%;
+    height: 14px;
+}
+.followed-streamers-handle-skeleton {
+    width: 110px;
+    max-width: 40%;
+    height: 10px;
 }
 
 .followed-streamers-list {
     display: flex;
     flex-direction: column;
+    max-height: 243px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-rule-2) transparent;
+}
+.followed-streamers-list::-webkit-scrollbar {
+    width: 6px;
+}
+.followed-streamers-list::-webkit-scrollbar-thumb {
+    background: var(--color-rule-2);
 }
 .followed-streamers-row {
     display: flex;
