@@ -62,8 +62,8 @@ export function SceneSidebar({
     ]
     const paletteRows: [string, keyof NonNullable<OverlayLayout["themeColors"]>, string][] = [
         ["Primär", "primary", colors.tokens?.["--progress-color"] ?? "#1db954"],
-        ["Sekundär", "secondary", colors.color],
-        ["Fläche", "surface", colors.backgroundColor],
+        ["Sekundär", "secondary", colors.tokens?.["--gradient-end"] ?? colors.color],
+        ["Fläche", "surface", colors.tokens?.["--gradient-start"] ?? colors.backgroundColor],
         ["Fenster", "window", colors.tokens?.["--window-bg"] ?? "#1b191c"],
         ["Text", "text", colors.color]
     ]
@@ -93,7 +93,8 @@ export function SceneSidebar({
                             ))}
                         </div>
                         <p className="overlay-settings-hint">
-                            Gilt für alle Widgets. Das Widget-Design kann Farben überschreiben.
+                            Primär ist die Standardfarbe für Fortschritt. Sekundär und Fläche bilden den Verlauf,
+                            Fenster die Flächen, Text Titel und Taskbar. Widget-Farben überschreiben das Theme.
                         </p>
                     </SidebarSection>
                 </div>

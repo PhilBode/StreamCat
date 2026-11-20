@@ -3,6 +3,7 @@ import {widgetModule} from "./registry"
 import {useState} from "react"
 import {SidebarSection, Select} from "../ui/dialog"
 import {
+    OVERLAY_COLOR_TEMPLATES,
     OVERLAY_WIDTH,
     OVERLAY_HEIGHT,
     MIN_WIDGET_WIDTH,
@@ -13,7 +14,9 @@ import {
     windowWidth,
     windowHeight,
     type EditorWidget,
-    type OverlayAsset
+    type OverlayAsset,
+    type OverlayLayout,
+    type OverlayTheme
 } from "@streamcat/interfaces"
 import {lockedWindowSize} from "./window/logic/window-resize"
 import {WindowObsSettings} from "./window/logic/window-obs-settings"
@@ -96,7 +99,9 @@ export function WidgetSettings({
     previewAudio = false,
     onPreviewAudioChange,
     onEditStart,
-    onEditEnd
+    onEditEnd,
+    theme = "default",
+    themeColors
 }: {
     widget: EditorWidget
     assets?: OverlayAsset[]
@@ -107,7 +112,15 @@ export function WidgetSettings({
     onSetBackground: () => void
     onEditStart?: () => void
     onEditEnd?: () => void
+    theme?: OverlayTheme
+    themeColors?: OverlayLayout["themeColors"]
 }) {
+    const themeTemplate = OVERLAY_COLOR_TEMPLATES[theme === "default" ? "standard" : theme]
+    const themeColor = (key: `--${string}`): string | undefined => {
+        if (key === "--window-bg") return themeColors?.window ?? themeTemplate.tokens?.["--window-bg"]
+        if (key === "--progress-color") return themeColors?.primary ?? themeTemplate.tokens?.["--progress-color"]
+        return undefined
+    }
     const locked = widget.type === "WINDOW" && widget.params.lockContentAspectRatio === true
     const module = widgetModule(widget.type)
     const Settings = module.settings
@@ -278,7 +291,11 @@ export function WidgetSettings({
                                     />
                                 )
                             const key = control.key
-                            const value = widget.params.designColors?.[key] ?? design.tokens?.[key] ?? "#ffffff"
+                            const value =
+                                widget.params.designColors?.[key] ??
+                                themeColor(key) ??
+                                design.tokens?.[key] ??
+                                "#ffffff"
                             return (
                                 <ColorField
                                     key={key}

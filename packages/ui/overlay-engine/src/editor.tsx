@@ -39,12 +39,14 @@ function OverlaySession({
     request,
     loginHref,
     previewIntervalMs,
+    demoMode,
     onRetry
 }: {
     basePath: string
     request: OverlayRequest
     loginHref?: string
     previewIntervalMs: number
+    demoMode?: boolean
     onRetry: () => void
 }) {
     const {
@@ -70,7 +72,7 @@ function OverlaySession({
         rotateScene,
         renameScene,
         deleteScene
-    } = useOverlayScenes(basePath, request)
+    } = useOverlayScenes(basePath, request, demoMode)
     const {layout, setLayout} = history
     const [selection, setSelection] = useState<OverlaySelection>(null)
     const selectedId = selection?.type === "widget" ? selection.id : null
@@ -311,6 +313,7 @@ function OverlaySession({
                     busy={!!busy || media.uploading}
                     dirty={dirty}
                     obsUrl={link}
+                    demoMode={demoMode}
                     onSelect={selectScene}
                     onSave={() => void saveScene()}
                     onRotate={() => void rotateScene()}
@@ -491,9 +494,11 @@ function OverlaySession({
                                                 onRemove={() => removeWidget(selected.id)}
                                                 onSetBackground={() => setWidgetBackground(selected.id)}
                                                 previewAudio={previewAudio}
-                                                onPreviewAudioChange={setPreviewAudio}
+                                                onPreviewAudioChange={demoMode ? undefined : setPreviewAudio}
                                                 onEditStart={() => history.begin("pointer")}
                                                 onEditEnd={history.end}
+                                                theme={layout.theme}
+                                                themeColors={layout.themeColors}
                                             />
                                         ) : (
                                             <div className="overlay-properties-empty">
@@ -649,6 +654,7 @@ export type OverlayEditorProps = {
     title?: string
     backLabel?: string
     previewIntervalMs?: number
+    demoMode?: boolean
     linkComponent?: ElementType<OverlayLinkProps>
 }
 
@@ -658,7 +664,8 @@ export function OverlayEditor({
     backHref,
     loginHref,
     backLabel,
-    previewIntervalMs = 5000
+    previewIntervalMs = 5000,
+    demoMode = false
 }: OverlayEditorProps) {
     const [revision, setRevision] = useState(0)
     const stableRequest = useStableRequest(request)
@@ -672,6 +679,7 @@ export function OverlayEditor({
                 request={stableRequest}
                 loginHref={loginHref}
                 previewIntervalMs={Math.max(1000, previewIntervalMs)}
+                demoMode={demoMode}
                 onRetry={() => setRevision((value) => value + 1)}
             />
         </section>

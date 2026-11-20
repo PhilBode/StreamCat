@@ -41,6 +41,11 @@ const styledSpotifyLayout: OverlayLayout = {
         }
     ]
 }
+const themedSpotifyLayout: OverlayLayout = {
+    ...layout,
+    themeColors: {primary: "#ff8800"},
+    widgets: [{...spotifyWidget, params: {...spotifyWidget.params, design: "default"}}]
+}
 const chatWidget: EditorWidget = {
     id: "chat",
     type: "TWITCH_CHAT",
@@ -54,7 +59,12 @@ const chatWidget: EditorWidget = {
 const plainChatLayout: OverlayLayout = {...layout, widgets: [chatWidget]}
 const windowedChatLayout: OverlayLayout = {
     ...layout,
-    widgets: [{...chatWidget, params: {...chatWidget.params, design: "windowed"}}]
+    widgets: [
+        {
+            ...chatWidget,
+            params: {...chatWidget.params, design: "windowed", title: "Demo Chat"}
+        }
+    ]
 }
 const windowWidget: EditorWidget = {
     id: "window",
@@ -97,6 +107,13 @@ test("design color overrides reach the renderer", () => {
     expect(html).toContain("--progress-color:#ff0000")
 })
 
+test("theme primary reaches widgets that define their own accent token", () => {
+    const html = renderToStaticMarkup(
+        <OverlayRenderer layout={themedSpotifyLayout} playback={EMPTY_PLAYBACK} chat={chat} />
+    )
+    expect(html).toContain("--progress-color:#ff8800")
+})
+
 test("twitch chat designs differ in markup", () => {
     const plain = renderToStaticMarkup(
         <OverlayRenderer layout={plainChatLayout} playback={EMPTY_PLAYBACK} chat={chat} />
@@ -108,6 +125,7 @@ test("twitch chat designs differ in markup", () => {
     expect(plain).not.toContain("overlay-window")
     expect(windowed).toContain("overlay-window")
     expect(windowed).not.toContain("overlay-chat-plain")
+    expect(windowed).toContain("Demo Chat")
 })
 
 test("window and media modules render their design components", () => {

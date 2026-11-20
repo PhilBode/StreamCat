@@ -11,7 +11,7 @@ function rememberScene(id: string) {
     window.history.replaceState(null, "", url.pathname + url.search)
 }
 
-export function useOverlayScenes(basePath: string, request: OverlayRequest) {
+export function useOverlayScenes(basePath: string, request: OverlayRequest, demoMode = false) {
     const [overlay, setOverlay] = useState<GuildOverlay | null>(null)
     const [scenes, setScenes] = useState<GuildOverlay[]>([])
     const [loading, setLoading] = useState(true)
@@ -141,9 +141,13 @@ export function useOverlayScenes(basePath: string, request: OverlayRequest) {
             replaceLayout((current) => (JSON.stringify(current) === JSON.stringify(layout) ? result.layout : current))
             setScenes((current) => current.map((item) => (item.id === result.id ? result : item)))
             setNotice(
-                history.getRevision() === revision
-                    ? "Overlay gespeichert. Deine Browser-Quelle lädt das Layout automatisch."
-                    : "Overlay gespeichert. Deine neueren Änderungen sind noch nicht gespeichert."
+                demoMode
+                    ? history.getRevision() === revision
+                        ? "Im Demo-Modus gespeichert. Deine Änderungen bleiben in diesem Browser."
+                        : "Im Demo-Modus gespeichert. Deine neueren Änderungen sind noch nicht gespeichert."
+                    : history.getRevision() === revision
+                      ? "Overlay gespeichert. Deine Browser-Quelle lädt das Layout automatisch."
+                      : "Overlay gespeichert. Deine neueren Änderungen sind noch nicht gespeichert."
             )
         }).then((saved) => saved && history.getRevision() === revision)
     }

@@ -90,7 +90,7 @@ export function SpotifyWidget({
 
     return (
         <div className="overlay-spotify">
-            {playback.albumUrl && (
+            {playback.albumUrl ? (
                 <img
                     key={playback.albumUrl}
                     className="overlay-album"
@@ -101,6 +101,10 @@ export function SpotifyWidget({
                     referrerPolicy="no-referrer"
                     onLoad={albumLoaded}
                 />
+            ) : (
+                <div className="overlay-album overlay-album-placeholder" aria-hidden="true">
+                    ♪
+                </div>
             )}
             <div className="overlay-track-info">
                 {widget.params.spectrumMode === "simulated" ? (

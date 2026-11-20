@@ -50,6 +50,7 @@ export type ChatWidgetParams = WidgetAppearance & {
     chatBots?: boolean
     chatHideCommands?: boolean
     chatHideBadges?: boolean
+    title?: string
 }
 
 export type WindowWidgetParams = WidgetAppearance & {
@@ -130,6 +131,7 @@ export interface OverlayAsset {
 export interface OverlayChat {
     channel: string | null
     url: string | null
+    previewUrl?: string | null
 }
 
 export interface OverlayLink {
