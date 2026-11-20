@@ -36,7 +36,7 @@
     align-items: center;
     gap: 8px;
 }
-.overlay-dialog-title {
+.overlay-dialog .overlay-dialog-title {
     flex: 1;
     margin: 0;
     color: var(--color-ink, #eeeeee);
@@ -60,10 +60,14 @@
 }
 .overlay-dialog-footer {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
     gap: 8px;
     padding: 0 20px;
+}
+.overlay-dialog-footer .button {
+    flex: none;
 }
 .overlay-dialog-field {
     display: flex;
