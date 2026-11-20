@@ -343,6 +343,7 @@ function OverlaySession({
                     {pendingScene && (
                         <Dialog
                             title="Ungespeicherte Änderungen"
+                            width={720}
                             onClose={() => setPendingScene(null)}
                             footer={
                                 <>
