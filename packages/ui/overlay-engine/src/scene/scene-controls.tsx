@@ -20,13 +20,15 @@ export function SceneControls({
     canUndo,
     canRedo,
     onUndo,
-    onRedo
+    onRedo,
+    demoMode = false
 }: {
     scenes: GuildOverlay[]
     selected: GuildOverlay | null
     busy: boolean
     dirty: boolean
     obsUrl: string | null
+    demoMode?: boolean
     onSelect: (id: string) => void
     onSave: () => void
     onRotate: () => void
@@ -109,27 +111,36 @@ export function SceneControls({
                             onClick={onRedo}
                         />
                         <span className="overlay-scene-divider" aria-hidden="true" />
-                        <button
-                            type="button"
-                            className="button"
-                            disabled={busy}
-                            onClick={() => (obsUrl ? void copyUrl() : setDialog("reset"))}
-                        >
-                            {obsUrl ? (copied ? "Kopiert ✓" : "OBS-URL kopieren") : "OBS-URL erzeugen"}
-                        </button>
-                        {obsUrl && (
-                            <button type="button" className="button" disabled={busy} onClick={() => setDialog("reset")}>
-                                URL zurücksetzen
-                            </button>
+                        {!demoMode && (
+                            <>
+                                <button
+                                    type="button"
+                                    className="button"
+                                    disabled={busy}
+                                    onClick={() => (obsUrl ? void copyUrl() : setDialog("reset"))}
+                                >
+                                    {obsUrl ? (copied ? "Kopiert ✓" : "OBS-URL kopieren") : "OBS-URL erzeugen"}
+                                </button>
+                                {obsUrl && (
+                                    <button
+                                        type="button"
+                                        className="button"
+                                        disabled={busy}
+                                        onClick={() => setDialog("reset")}
+                                    >
+                                        URL zurücksetzen
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    className="button"
+                                    disabled={busy || !obsUrl}
+                                    onClick={() => obsUrl && window.open(obsUrl, "_blank", "noopener")}
+                                >
+                                    Vorschau öffnen
+                                </button>
+                            </>
                         )}
-                        <button
-                            type="button"
-                            className="button"
-                            disabled={busy || !obsUrl}
-                            onClick={() => obsUrl && window.open(obsUrl, "_blank", "noopener")}
-                        >
-                            Vorschau öffnen
-                        </button>
                         <button type="button" className="button primary" disabled={busy || !dirty} onClick={onSave}>
                             Speichern
                         </button>

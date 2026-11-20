@@ -5,10 +5,9 @@ import {WindowFrame} from "../../shared/window-frame"
 type WindowWidget = Extract<EditorWidget, {type: "WINDOW"}>
 
 export const windowColorControls = [
-    {key: "color", label: "Textfarbe"},
-    {key: "backgroundColor", label: "Hintergrund"},
-    {key: "--window-bg", label: "Fensterfläche"},
-    {key: "--progress-color", label: "Fortschritt"}
+    {key: "color", label: "Titelfarbe"},
+    {key: "backgroundColor", label: "Innenfläche"},
+    {key: "--window-bg", label: "Rahmen"}
 ] as const satisfies readonly WidgetColorControl[]
 
 export function WindowDesign({widget, title}: WidgetRenderProps) {

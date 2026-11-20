@@ -7,6 +7,20 @@ export function ChatSettings({widget: value, onChange}: WidgetSettingsProps) {
     const widget = value as Extract<EditorWidget, {type: "TWITCH_CHAT"}>
     return (
         <>
+            {widget.params.design === "windowed" && (
+                <label className="overlay-field">
+                    <span className="overlay-field-label">Fenstertitel</span>
+                    <input
+                        className="overlay-field-input"
+                        value={widget.params.title ?? "Stream Chat"}
+                        maxLength={80}
+                        placeholder="Stream Chat"
+                        onChange={(event) =>
+                            onChange({...widget, params: {...widget.params, title: event.target.value}})
+                        }
+                    />
+                </label>
+            )}
             <label className="overlay-field">
                 <span className="overlay-field-label">Twitch-Kanal</span>
                 <input

@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="referrer" content="no-referrer" />
+        <title>StreamCat Demo</title>
+        <style>
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                background: #000;
+                color: #eee;
+                font-family: ui-monospace, monospace;
+            }
+            a {
+                color: inherit;
+            }
+        </style>
+        <script>
+            ;(() => {
+                const segments = window.location.pathname.split("/").filter(Boolean)
+                const dashboard = segments.indexOf("dashboard")
+                if (dashboard === -1) return
+                const rest = segments.slice(dashboard + 1)
+                const view = rest.length === 0 ? "dashboard" : rest[1] === "overlay" ? "editor" : "guild"
+                const base = segments.slice(0, dashboard).join("/")
+                window.location.replace((base ? "/" + base : "") + "/?view=" + view)
+            })()
+        </script>
+    </head>
+    <body>
+        <p>Demo wird geladen … <a href="./">Zur Startseite</a></p>
+    </body>
+</html>

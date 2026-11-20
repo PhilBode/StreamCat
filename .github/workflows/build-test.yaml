@@ -1,7 +1,6 @@
 name: Build check
 
 on:
-  on:
   pull_request:
     branches:
       - main

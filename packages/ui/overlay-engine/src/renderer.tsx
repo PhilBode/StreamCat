@@ -1,5 +1,11 @@
 import type {CSSProperties} from "react"
-import {type OverlayAsset, type OverlayChat, type OverlayLayout, type OverlayPlayback} from "@streamcat/interfaces"
+import {
+    OVERLAY_COLOR_TEMPLATES,
+    type OverlayAsset,
+    type OverlayChat,
+    type OverlayLayout,
+    type OverlayPlayback
+} from "@streamcat/interfaces"
 import {StandardScene} from "./scene/standard-scene"
 import {widgetModule} from "./widgets/registry"
 
@@ -22,6 +28,11 @@ export function OverlayRenderer({
     audioEnabled?: boolean
 }) {
     const scene = layout.scene ?? "widgets"
+    const themeTemplate = OVERLAY_COLOR_TEMPLATES[layout.theme === "default" ? "standard" : layout.theme]
+    const themeTokens = {
+        "--progress-color": layout.themeColors?.primary ?? themeTemplate.tokens?.["--progress-color"] ?? "#1db954",
+        "--window-bg": layout.themeColors?.window ?? themeTemplate.tokens?.["--window-bg"] ?? "#1b191c"
+    } as CSSProperties
     const themeVars = layout.themeColors
         ? ({
               ...(layout.themeColors.primary ? {"--progress-color": layout.themeColors.primary} : {}),
@@ -43,14 +54,16 @@ export function OverlayRenderer({
                 const module = widgetModule(widget.type)
                 const design = module.designs[widget.params.design] ?? module.designs[module.defaultDesign]
                 const designTokens = {
+                    // Scene theme beats design defaults; per-widget overrides win last.
                     ...(design.tokens ?? {}),
+                    ...themeTokens,
                     ...(widget.params.designColors ?? {})
                 } as CSSProperties
                 const title =
                     widget.type === "WINDOW"
                         ? (widget.params.title ?? "Fenster")
                         : widget.type === "TWITCH_CHAT"
-                          ? "Stream Chat"
+                          ? (widget.params.title ?? "Stream Chat")
                           : "Currently Playing"
                 const DesignComponent = design.component
                 return (

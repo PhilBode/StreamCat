@@ -119,6 +119,7 @@ function chatSettings(params: Record<string, unknown>): Partial<ChatWidgetParams
         throw new BadRequestException("Ungültiger Twitch-Kanal.")
     const settings = {
         ...TWITCH_CHAT_DEFAULTS,
+        title: "Stream Chat",
         chatChannel: channel.trim(),
         chatFont: chatFont(params.chatFont ?? TWITCH_CHAT_DEFAULTS.chatFont)
     }
@@ -136,6 +137,11 @@ function chatSettings(params: Record<string, unknown>): Partial<ChatWidgetParams
         if (params[key] === undefined) continue
         if (typeof params[key] !== "boolean") throw new BadRequestException("Ungültige Chat-Einstellung.")
         settings[key] = params[key]
+    }
+    if (params.title !== undefined) {
+        if (typeof params.title !== "string" || params.title.length > 80)
+            throw new BadRequestException("Der Fenstertitel darf maximal 80 Zeichen enthalten.")
+        settings.title = params.title.trim() || "Stream Chat"
     }
     return settings
 }
