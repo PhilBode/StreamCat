@@ -1,0 +1,73 @@
+name: Demo page
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "apps/demo/**"
+      - "apps/web/**"
+      - "packages/ui/overlay-engine/**"
+      - "packages/interfaces/**"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/demo-pages.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "apps/demo/**"
+      - "apps/web/**"
+      - "packages/ui/overlay-engine/**"
+      - "packages/interfaces/**"
+      - "package.json"
+      - "bun.lock"
+      - ".github/workflows/demo-pages.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun run build:demo
+
+  deploy:
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.4
+      - run: bun install --frozen-lockfile
+      - run: bun run build:demo
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/demo/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
