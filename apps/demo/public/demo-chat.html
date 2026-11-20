@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="de">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="referrer" content="no-referrer" />
+        <title>Demo Twitch-Chat</title>
+        <style>
+            :root {
+                color-scheme: normal;
+                --chat-font: "Trebuchet MS", "Segoe UI", sans-serif;
+                --chat-size: 32px;
+            }
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                overflow: hidden;
+                background: transparent !important;
+            }
+            body {
+                display: flex;
+                flex-direction: column;
+                color: #efeff1;
+                font-family: var(--chat-font);
+                font-size: var(--chat-size);
+                line-height: 1.35;
+            }
+            .chat {
+                flex: 1;
+                min-height: 0;
+                padding: 8px 12px;
+                overflow: hidden;
+                mask-image: linear-gradient(to bottom, transparent 0, #000 15%, #000 100%);
+                -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 15%, #000 100%);
+            }
+            .chat-inner {
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                min-height: 100%;
+                gap: 3px;
+            }
+            .line {
+                overflow-wrap: anywhere;
+                animation: enter 180ms ease-out both;
+            }
+            .no-animate .line {
+                animation: none;
+            }
+            .badge {
+                display: inline-block;
+                margin-right: 3px;
+                color: #ffd479;
+            }
+            .name {
+                font-weight: 700;
+                color: var(--name, #a970ff);
+            }
+            .name::after {
+                content: ":";
+                color: #efeff1;
+            }
+            .text {
+                color: #efeff1;
+            }
+            @keyframes enter {
+                from {
+                    opacity: 0;
+                    transform: translateY(4px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .line {
+                    animation: none;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="chat" aria-live="off">
+            <div class="chat-inner" id="chat"></div>
+        </div>
+        <script>
+            const params = new URLSearchParams(window.location.search)
+            const font = params.get("font") || "Roboto"
+            const size = Number(params.get("size") || 3)
+            const fade = Number(params.get("fade") || 30)
+            const animate = params.get("animate") !== "false"
+            // The settings are labelled "hide ...", so checked means hide in the demo.
+            const hideBots = params.get("bots") !== "false"
+            const hideCommands = params.get("hide_commands") !== "false"
+            const hideBadges = params.get("hide_badges") !== "false"
+
+            const fontStacks = {
+                "Baloo Tammudu": '"Trebuchet MS", "Segoe UI", sans-serif',
+                "Segoe UI": '"Segoe UI", "Trebuchet MS", sans-serif',
+                Roboto: 'Roboto, "Segoe UI", sans-serif',
+                Lato: 'Lato, "Segoe UI", sans-serif',
+                "Noto Sans": '"Noto Sans", "Segoe UI", sans-serif',
+                "Source Code Pro": '"Source Code Pro", monospace',
+                Impact: 'Impact, "Arial Black", sans-serif',
+                Comfortaa: 'Comfortaa, "Trebuchet MS", sans-serif',
+                "Dancing Script": '"Dancing Script", cursive',
+                "Indie Flower": '"Indie Flower", cursive',
+                "Press Start 2P": '"Press Start 2P", monospace',
+                Wallpoet: "Wallpoet, fantasy",
+                Tiny5: '"Tiny5", monospace',
+                "Jersey 10": '"Jersey 10", monospace'
+            }
+            const sizeStacks = ["14px", "18px", "24px", "32px"]
+            const fontStack =
+                fontStacks[font] || '"' + String(font).replace(/["\\]/g, "") + '", "Trebuchet MS", sans-serif'
+
+            document.documentElement.style.setProperty("--chat-font", fontStack)
+            document.documentElement.style.setProperty("--chat-size", sizeStacks[size] || sizeStacks[3])
+            document.body.classList.toggle("no-animate", !animate)
+
+            const messages = [
+                {name: "nora_streams", text: "der editor sieht stark aus", color: "#ff9d5c", badge: "★"},
+                {name: "pixelpaule", text: "kann ich das overlay direkt in obs nutzen?", color: "#7bd88f"},
+                {name: "StreamCat", text: "Song Request hinzugefügt: Midnight Drive", color: "#f6aa1c", bot: true},
+                {name: "mika", text: "drag and drop ist so smooth", color: "#ff8fbd", badge: "✦"},
+                {name: "pixelpaule", text: "!sr Midnight Drive", color: "#7bd88f", command: true},
+                {name: "catcode", text: "die szenen-wechsel sind genau richtig", color: "#8eb8ff"},
+                {name: "luna", text: "wie viele widgets passen auf eine szene?", color: "#ffd479"},
+                {name: "ben", text: "1920x1080, alles bleibt an ort und stelle", color: "#b8a1ff"},
+                {name: "nora_streams", text: "und alles nur lokal im browser", color: "#ff9d5c", badge: "★"},
+                {name: "pixelpaule", text: "demo login geklickt, los gehts", color: "#7bd88f"}
+            ]
+            const visible = messages.filter(
+                (message) => !(hideBots && message.bot) && !(hideCommands && message.command)
+            )
+
+            const chat = document.getElementById("chat")
+            const entries = []
+            let index = 0
+
+            function prune() {
+                if (!fade) return
+                const cutoff = Date.now() - fade * 1000
+                while (entries[0] && entries[0].at < cutoff) {
+                    entries.shift().element.remove()
+                }
+            }
+
+            function addLine() {
+                const message = visible[index % visible.length]
+                index += 1
+                const line = document.createElement("div")
+                line.className = "line"
+                if (!hideBadges && message.badge) {
+                    const badge = document.createElement("span")
+                    badge.className = "badge"
+                    badge.textContent = message.badge
+                    line.append(badge)
+                }
+                const name = document.createElement("span")
+                name.className = "name"
+                name.textContent = message.name
+                name.style.setProperty("--name", message.color)
+                const text = document.createElement("span")
+                text.className = "text"
+                text.textContent = " " + message.text
+                line.append(name, text)
+                chat.append(line)
+                entries.push({element: line, at: Date.now()})
+                prune()
+                while (entries.length > 14) entries.shift().element.remove()
+            }
+
+            addLine()
+            addLine()
+            addLine()
+            window.setInterval(addLine, 2400)
+            window.setInterval(prune, 1000)
+        </script>
+    </body>
+</html>

@@ -3,6 +3,20 @@
 A Discord bot for Twitch live alerts and Spotify song requests, with a web dashboard
 and an OBS overlay editor. Build scenes with draggable widgets, chat, images and videos.
 
+## Live demo
+
+Try the static overlay-editor demo at
+[philbode.github.io/StreamCat](https://philbode.github.io/StreamCat/).
+
+The demo includes the server dashboard, a mocked server settings view, and the real
+overlay editor. It uses mock data and keeps changes in your browser. It does not need an
+account or a running backend, and it cannot connect to Discord, Twitch, Spotify or OBS.
+
+Run it locally with `bun install && bun run dev:demo`.
+
+Deployment uses GitHub Actions; the repository Pages source must be set to
+**GitHub Actions**.
+
 ## License
 
 [MIT](LICENSE)
