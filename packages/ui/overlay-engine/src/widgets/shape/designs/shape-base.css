@@ -1,0 +1,8 @@
+.overlay-shape {
+    width: 100%;
+    height: 100%;
+    box-sizing: border-box;
+    background: var(--window-bg);
+    border: 1px solid var(--shape-border, transparent);
+    border-radius: var(--shape-radius, 0);
+}

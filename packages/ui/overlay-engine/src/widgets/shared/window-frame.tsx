@@ -1,5 +1,6 @@
 import type {CSSProperties, ReactNode} from "react"
 import {WINDOW_HEADER_HEIGHT, WINDOW_CONTENT_BORDER, WINDOW_CORNER_RADIUS} from "@streamcat/interfaces"
+import "./window-frame.css"
 
 const geometry = {
     "--window-header-height": `${WINDOW_HEADER_HEIGHT}px`,

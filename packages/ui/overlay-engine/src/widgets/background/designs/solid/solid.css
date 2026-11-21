@@ -1,0 +1,5 @@
+.overlay-background-solid {
+    position: absolute;
+    inset: 0;
+    background: var(--gradient-start, #1b191c);
+}

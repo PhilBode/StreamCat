@@ -1,0 +1,38 @@
+.overlay-background {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+
+.overlay-background-gradient {
+    position: absolute;
+    width: 2554px;
+    height: 2554px;
+    top: 50%;
+    left: 50%;
+    background: linear-gradient(45deg, var(--gradient-start, #8a71b3), var(--gradient-end, #e88a98));
+    filter: blur(var(--background-blur, 0));
+    animation: overlay-background-rotate var(--background-speed, 15s) linear infinite;
+}
+
+.overlay-background-dim {
+    position: absolute;
+    inset: 0;
+    background: var(--background-dim, #000000);
+}
+
+@keyframes overlay-background-rotate {
+    from {
+        transform: translate(-50%, -50%) rotate(0);
+    }
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .overlay-background-gradient {
+        animation: none;
+        transform: translate(-50%, -50%);
+    }
+}

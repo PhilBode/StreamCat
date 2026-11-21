@@ -1,0 +1,143 @@
+.overlay-spotify {
+    display: flex;
+    align-items: stretch;
+    padding: 19.2px;
+    gap: 19.2px;
+    width: 100%;
+    height: 100%;
+}
+
+.overlay-album {
+    width: auto;
+    max-width: 45%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: 1;
+    object-fit: contain;
+    border-radius: 10.8px;
+    flex-shrink: 0;
+    animation: overlay-artwork-in 0.5s ease-out;
+}
+
+.overlay-album-placeholder {
+    display: grid;
+    place-items: center;
+    background: var(--window-bg, #1b191c);
+    border: 1px solid #ffffff24;
+    color: var(--color-muted, #929292);
+    font-family: var(--font-body, monospace);
+    font-size: 64px;
+    line-height: 1;
+}
+
+@keyframes overlay-artwork-in {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.overlay-track-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    min-width: 0;
+    flex: 1;
+    overflow: hidden;
+}
+
+.overlay-spectrum {
+    width: 100%;
+    min-height: 0;
+    flex: 1;
+    display: block;
+}
+
+.overlay-spectrum-simulated {
+    display: flex;
+    align-items: flex-end;
+    gap: 1px;
+    overflow: hidden;
+}
+
+.overlay-spectrum-simulated i {
+    flex: 1;
+    height: 100%;
+    background: currentColor;
+    transform-origin: bottom;
+}
+
+.overlay-title-viewport {
+    overflow: hidden;
+    flex: none;
+}
+
+.overlay-track-title,
+.overlay-track-artist {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    margin-bottom: 8px;
+    flex: none;
+}
+
+.overlay-track-title {
+    font-size: 37.8px;
+    font-weight: bold;
+}
+
+.overlay-title-text {
+    display: inline-block;
+}
+
+.overlay-track-title.scrolling {
+    display: inline-block;
+    overflow: visible;
+    padding-left: 100%;
+    animation: overlay-scroll-text 10s linear infinite;
+}
+
+.overlay-track-artist {
+    font-size: 24.84px;
+    text-overflow: ellipsis;
+}
+
+@keyframes overlay-scroll-text {
+    from {
+        transform: translateX(0);
+    }
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+.overlay-progress {
+    width: 100%;
+    height: 5.4px;
+    background: currentColor;
+    border-radius: 2.7px;
+    flex: none;
+    overflow: hidden;
+}
+
+.overlay-progress[hidden] {
+    display: none;
+}
+
+.overlay-progress-fill {
+    width: 0;
+    height: 100%;
+    background: var(--progress-color);
+    border-radius: inherit;
+    transition: width 1s linear;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .overlay-track-title.scrolling {
+        animation: none;
+        padding-left: 0;
+    }
+}

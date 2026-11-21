@@ -1,0 +1,84 @@
+.overlay-socials {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    color: var(--scene-text, inherit);
+    font-size: 27px;
+}
+
+.overlay-socials--row {
+    flex-direction: row;
+    gap: 38.4px;
+}
+
+.overlay-socials--column {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.overlay-socials-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+    padding-bottom: 5px;
+    max-width: 460px;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.overlay-socials--inline .overlay-socials-link::after {
+    content: "";
+    position: absolute;
+    bottom: -10px;
+    height: 5px;
+    width: 100%;
+    background: var(--social-color);
+}
+
+.overlay-socials-link.overlay-socials-twitch {
+    --social-color: var(--socials-twitch, #9146ff);
+}
+
+.overlay-socials-link.overlay-socials-twitter {
+    --social-color: var(--socials-twitter, #1da1f2);
+}
+
+.overlay-socials-link.overlay-socials-discord {
+    --social-color: var(--socials-discord, #5865f2);
+}
+
+.overlay-socials-icon {
+    width: 32.4px;
+    height: 32.4px;
+    flex: none;
+    animation: overlay-socials-pulse 9s infinite;
+}
+
+.overlay-socials-twitter .overlay-socials-icon {
+    animation-delay: 3s;
+}
+
+.overlay-socials-discord .overlay-socials-icon {
+    animation-delay: 6s;
+}
+
+@keyframes overlay-socials-pulse {
+    0%,
+    30%,
+    100% {
+        color: var(--scene-text, inherit);
+    }
+    10%,
+    20% {
+        color: var(--social-color);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .overlay-socials-icon {
+        animation: none;
+    }
+}

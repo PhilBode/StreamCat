@@ -1,0 +1,5 @@
+.overlay-clock-inline {
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+}

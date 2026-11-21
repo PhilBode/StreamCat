@@ -1,0 +1,4 @@
+.overlay-clock-stacked {
+    flex-direction: column;
+    justify-content: center;
+}

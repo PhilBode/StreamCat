@@ -1,11 +1,18 @@
-import type {GuildOverlay, OverlayAsset, OverlayChat, OverlayLayout, OverlayScene} from "@streamcat/interfaces"
+import type {
+    GuildOverlay,
+    OverlayAsset,
+    OverlayChat,
+    OverlayLayout,
+    OverlayScene,
+    OverlayTheme
+} from "@streamcat/interfaces"
 import type {OverlayRequest} from "@streamcat/overlay-engine"
 import {DEMO_ASSETS, DEMO_BASE_PATH, createDemoOverlay, demoPlayback} from "./seed"
-import {loadScenes, persistScenes} from "./storage"
+import {loadAssets, loadScenes, persistAssets, persistScenes} from "./storage"
 
 const LATENCY_MS = 120
 let scenes = loadScenes()
-let sessionAssets: OverlayAsset[] = []
+let sessionAssets: OverlayAsset[] = loadAssets()
 
 function clone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T
@@ -35,7 +42,16 @@ function chatPreview(): OverlayChat {
     return {channel: "streamcatdemo", url: null, previewUrl}
 }
 
-function assetUpload(body: BodyInit | null | undefined): OverlayAsset {
+function readFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(String(reader.result))
+        reader.onerror = () => reject(new Error("Demo-Upload konnte die Datei nicht lesen."))
+        reader.readAsDataURL(file)
+    })
+}
+
+async function assetUpload(body: BodyInit | null | undefined): Promise<OverlayAsset> {
     if (!(body instanceof File)) throw new Error("Demo-Upload konnte die Datei nicht lesen.")
     if (!body.type.startsWith("image/") && !body.type.startsWith("video/")) {
         throw new Error("Die Demo unterstützt nur Bilder und Videos.")
@@ -46,9 +62,10 @@ function assetUpload(body: BodyInit | null | undefined): OverlayAsset {
         fileName: body.name,
         mimeType: body.type,
         sizeBytes: body.size,
-        url: URL.createObjectURL(body)
+        url: await readFile(body)
     }
     sessionAssets = [asset, ...sessionAssets]
+    persistAssets(sessionAssets)
     return asset
 }
 
@@ -82,10 +99,14 @@ export const demoRequest: OverlayRequest = async <T>(path: string, options: Requ
     }
 
     if (method === "POST" && parts.length === 1 && parts[0] === "scenes") {
-        const body = jsonBody<{name?: unknown; scene?: unknown}>(options.body)
+        const body = jsonBody<{name?: unknown; scene?: unknown; theme?: unknown}>(options.body)
         if (typeof body.name !== "string" || !body.name.trim()) throw new Error("Bitte gib der Szene einen Namen.")
         const scene = body.scene as OverlayScene
-        const overlay = createDemoOverlay(scene, body.name.trim(), `demo-${crypto.randomUUID()}`)
+        const theme =
+            body.theme === "autumn" || body.theme === "winter" || body.theme === "default"
+                ? (body.theme as OverlayTheme)
+                : "default"
+        const overlay = createDemoOverlay(scene, body.name.trim(), `demo-${crypto.randomUUID()}`, theme)
         persist([...scenes, overlay])
         return clone({overlay, browserSourceUrl: ""}) as T
     }
@@ -122,7 +143,7 @@ export const demoRequest: OverlayRequest = async <T>(path: string, options: Requ
     }
 
     if (method === "POST" && parts.length === 1 && parts[0] === "assets") {
-        return clone(assetUpload(options.body)) as T
+        return clone(await assetUpload(options.body)) as T
     }
 
     if (method === "DELETE" && parts.length === 2 && parts[0] === "assets") {
@@ -130,6 +151,7 @@ export const demoRequest: OverlayRequest = async <T>(path: string, options: Requ
         if (!sessionAssets.some((asset) => asset.id === id))
             throw new Error("Demo-Assets bleiben erhalten. Lade eigene Dateien hoch, um sie zu löschen.")
         sessionAssets = sessionAssets.filter((asset) => asset.id !== id)
+        persistAssets(sessionAssets)
         return {success: true} as T
     }
 

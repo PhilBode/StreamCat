@@ -47,7 +47,6 @@ export function SceneSidebar({
             ...overlayPreset(presetScene, [crypto.randomUUID(), crypto.randomUUID()], layout.theme),
             themeColors: undefined,
             font: layout.font ?? "tiny5",
-            socials: layout.socials,
             guides: layout.guides
         })
         setPresetConfirm(false)
@@ -62,8 +61,8 @@ export function SceneSidebar({
     ]
     const paletteRows: [string, keyof NonNullable<OverlayLayout["themeColors"]>, string][] = [
         ["Primär", "primary", colors.tokens?.["--progress-color"] ?? "#1db954"],
-        ["Sekundär", "secondary", colors.tokens?.["--gradient-end"] ?? colors.color],
-        ["Fläche", "surface", colors.tokens?.["--gradient-start"] ?? colors.backgroundColor],
+        ["Sekundär", "secondary", colors.gradientEnd],
+        ["Fläche", "surface", colors.gradientStart],
         ["Fenster", "window", colors.tokens?.["--window-bg"] ?? "#1b191c"],
         ["Text", "text", colors.color]
     ]
@@ -94,7 +93,7 @@ export function SceneSidebar({
                         </div>
                         <p className="overlay-settings-hint">
                             Primär ist die Standardfarbe für Fortschritt. Sekundär und Fläche bilden den Verlauf,
-                            Fenster die Flächen, Text Titel und Taskbar. Widget-Farben überschreiben das Theme.
+                            Fenster die Flächen, Text die Textfarbe. Widget-Farben überschreiben das Theme.
                         </p>
                     </SidebarSection>
                 </div>
@@ -150,47 +149,6 @@ export function SceneSidebar({
                                     Standardlayout laden
                                 </button>
                             )}
-                            <label className="overlay-check overlay-scene-toggle">
-                                <input
-                                    type="checkbox"
-                                    className="overlay-check-input"
-                                    checked={(layout.scene ?? "widgets") === "widgets"}
-                                    onChange={(event) =>
-                                        onChange({...layout, scene: event.target.checked ? "widgets" : presetScene})
-                                    }
-                                />
-                                <span className="overlay-check-box" aria-hidden="true" />
-                                Nur Widgets · transparenter Hintergrund
-                            </label>
-                        </SidebarSection>
-                    </div>
-                    <div className="overlay-settings-block">
-                        <SidebarSection label="Socials im Standard-Overlay">
-                            {(["twitch", "twitter", "discord"] as const).map((provider) => (
-                                <label key={provider} className="overlay-field">
-                                    <span className="overlay-field-label">
-                                        {{twitch: "Twitch", twitter: "Twitter", discord: "Discord"}[provider]}
-                                    </span>
-                                    <input
-                                        className="overlay-field-input"
-                                        maxLength={100}
-                                        value={layout.socials?.[provider] ?? ""}
-                                        placeholder={
-                                            provider === "twitch"
-                                                ? "Verknüpfter Kanal"
-                                                : provider === "twitter"
-                                                  ? "@deinname"
-                                                  : "Dein Discord-Einladungslink"
-                                        }
-                                        onChange={(event) =>
-                                            onChange({
-                                                ...layout,
-                                                socials: {...layout.socials, [provider]: event.target.value}
-                                            })
-                                        }
-                                    />
-                                </label>
-                            ))}
                         </SidebarSection>
                     </div>
                 </>

@@ -219,7 +219,8 @@ export function Select({
     onChange,
     disabled,
     placeholder,
-    inline
+    inline,
+    searchable
 }: {
     label?: string
     value: string | null
@@ -228,11 +229,25 @@ export function Select({
     disabled?: boolean
     placeholder?: string
     inline?: boolean
+    searchable?: boolean
 }) {
     const [open, setOpen] = useState(false)
+    const [query, setQuery] = useState("")
     const fieldRef = useRef<HTMLButtonElement>(null)
     const {rootRef, menuRef, rect} = useFloatingMenuRect(open, fieldRef, () => setOpen(false))
     const selected = options.find((option) => option.value === value) ?? null
+    useEffect(() => {
+        if (!open) setQuery("")
+    }, [open])
+    const normalizedQuery = query.trim().toLowerCase()
+    const visibleOptions =
+        searchable && normalizedQuery
+            ? options.filter(
+                  (option) =>
+                      option.label.toLowerCase().includes(normalizedQuery) ||
+                      option.value.toLowerCase().includes(normalizedQuery)
+              )
+            : options
 
     return (
         <div className={`overlay-select ${inline ? "overlay-select--inline" : ""}`}>
@@ -265,7 +280,19 @@ export function Select({
                                 ...(rect.above ? {bottom: window.innerHeight - rect.top} : {top: rect.top})
                             }}
                         >
-                            {options.map((option) => (
+                            {searchable && (
+                                <li className="overlay-select-search-item">
+                                    <input
+                                        className="overlay-select-search"
+                                        value={query}
+                                        autoFocus
+                                        placeholder="Suchen …"
+                                        aria-label="Optionen suchen"
+                                        onChange={(event) => setQuery(event.target.value)}
+                                    />
+                                </li>
+                            )}
+                            {visibleOptions.map((option) => (
                                 <li key={option.value}>
                                     <button
                                         type="button"

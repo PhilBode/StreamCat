@@ -1,0 +1,3 @@
+.overlay-shape--rect {
+    border-radius: var(--shape-radius, 0);
+}

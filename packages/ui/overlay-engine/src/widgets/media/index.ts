@@ -1,24 +1,39 @@
+import type {EditorWidget, OverlayAsset} from "@streamcat/interfaces"
 import type {WidgetModule} from "../types"
-import {mediaAutumnDesign} from "./designs/autumn"
-import {mediaDefaultDesign} from "./designs/default"
-import {mediaWinterDesign} from "./designs/winter"
+import {mediaDesign} from "./designs/media"
+import {MediaGlyph} from "./logic/media-glyph"
 import {MediaSettings} from "./logic/media-settings"
 
-function mediaModule(type: "IMAGE" | "VIDEO"): WidgetModule {
-    return {
-        type,
-        label: type === "IMAGE" ? "Bild" : "Video",
-        width: 480,
-        height: 270,
-        defaultDesign: "default",
-        designs: {
-            default: mediaDefaultDesign,
-            autumn: mediaAutumnDesign,
-            winter: mediaWinterDesign
-        },
-        settings: MediaSettings
-    }
+function assetName(widget: EditorWidget, assets: OverlayAsset[]) {
+    if (widget.type !== "MEDIA" || !widget.params.assetId) return null
+    return assets.find((item) => item.id === widget.params.assetId)?.fileName ?? null
 }
 
-export const imageModule = mediaModule("IMAGE")
-export const videoModule = mediaModule("VIDEO")
+function mediaSummary(widget: EditorWidget, assets: OverlayAsset[]) {
+    if (widget.type !== "MEDIA") return null
+    const name = assetName(widget, assets) ?? "Medium"
+    const fit = widget.params.fit === "cover" ? "Fläche ausfüllen" : "Ganzes Bild"
+    return `${name} - ${fit}`
+}
+
+export const mediaModule: WidgetModule = {
+    type: "MEDIA",
+    label: "Medium",
+    description: "Bild oder Video aus der Asset-Bibliothek.",
+    category: "Media",
+    glyph: MediaGlyph,
+    addable: false,
+    defaultDesign: "media",
+    designs: {
+        media: mediaDesign
+    },
+    settings: MediaSettings,
+    sectionLabel: "Bild Einstellungen",
+    sectionSummary: mediaSummary,
+    nameFor: (widget, assets) => {
+        const name = assetName(widget, assets)
+        return name ? `Medium · ${name}` : "Medium"
+    },
+    titleFor: () => "Medium",
+    frame: "none"
+}

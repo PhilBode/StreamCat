@@ -1,5 +1,5 @@
 import type {ComponentType} from "react"
-import type {EditorWidget, EditorWidgetType, OverlayAsset, OverlayChat, OverlayPlayback} from "@streamcat/interfaces"
+import type {EditorWidget, OverlayAsset, OverlayChat, OverlayPlayback, WidgetType} from "@streamcat/interfaces"
 
 export type WidgetRenderProps = {
     widget: EditorWidget
@@ -25,6 +25,8 @@ export type WidgetColorControl = {
     label: string
 }
 
+export type WidgetCategory = "Audio" | "Chat" | "Media" | "Fenster" | "Szene"
+
 export type WidgetDesign = {
     id: string
     label: string
@@ -37,11 +39,18 @@ export type WidgetDesign = {
 }
 
 export type WidgetModule = {
-    type: EditorWidgetType
+    type: WidgetType
     label: string
-    width: number
-    height: number
+    description: string
+    category: WidgetCategory
+    glyph: ComponentType
+    addable: boolean
     defaultDesign: string
     designs: Record<string, WidgetDesign>
     settings: ComponentType<WidgetSettingsProps>
+    sectionLabel: string
+    sectionSummary?: (widget: EditorWidget, assets: OverlayAsset[]) => string | null
+    nameFor?: (widget: EditorWidget, assets: OverlayAsset[]) => string
+    titleFor?: (widget: EditorWidget) => string
+    frame: "widget" | "none"
 }

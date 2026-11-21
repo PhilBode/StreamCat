@@ -214,7 +214,7 @@ export class OverlayAssetsService implements OnModuleInit, OnModuleDestroy {
         }
         if (!overlay || !asset) throw new NotFoundException("Medium nicht gefunden.")
         const isReferenced = overlay.widgets.some(
-            (widget) => widget.type === asset.kind && (widget.params as {assetId?: string} | null)?.assetId === asset.id
+            (widget) => widget.type === "MEDIA" && (widget.params as {assetId?: string} | null)?.assetId === asset.id
         )
         if (!isReferenced) throw new NotFoundException("Medium nicht gefunden.")
         const hasValidSignature = timingSafeEqual(

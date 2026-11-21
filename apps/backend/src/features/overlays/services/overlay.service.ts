@@ -11,21 +11,19 @@ import {BotLoggerService, errorDetails, frontendUrl, TokenEncryptionService, typ
 import {
     overlayPreset,
     OVERLAY_THEME_COLORS,
-    isWidgetDesignId,
     OVERLAY_WIDTH,
     OVERLAY_HEIGHT,
-    TWITCH_CHAT_DEFAULTS,
+    WIDGET_SPECS,
+    isWidgetType,
+    normalizeAppearance,
     twitchChatUrl,
-    type SpotifyWidgetParams,
-    type ChatWidgetParams,
-    type WindowWidgetParams,
-    type MediaWidgetParams,
     type GuildOverlay,
     type OverlayChat,
     type OverlayLink,
     type OverlaySnapshot,
     type OverlayTheme,
     type OverlayScene,
+    type OverlayLayout,
     type EditorWidget
 } from "@streamcat/interfaces"
 import {overlayGuides, validateOverlayLayout} from "../settings/overlay-layout"
@@ -48,12 +46,14 @@ function sceneName(value: unknown): string {
     return value.trim()
 }
 
-function storedDesignColors(value: unknown): Record<`--${string}`, string> | undefined {
+function storedThemeColors(value: unknown): OverlayLayout["themeColors"] {
     if (!value || typeof value !== "object" || Array.isArray(value)) return undefined
-    const entries = Object.entries(value)
-    if (!entries.length || entries.length > 20) return undefined
-    if (entries.some(([key, color]) => !/^--[a-z0-9-]{1,60}$/.test(key) || typeof color !== "string")) return undefined
-    return Object.fromEntries(entries) as Record<`--${string}`, string>
+    const data = value as Record<string, unknown>
+    const colors: NonNullable<OverlayLayout["themeColors"]> = {}
+    for (const key of ["primary", "secondary", "surface", "window", "text"] as const) {
+        if (typeof data[key] === "string") colors[key] = data[key]
+    }
+    return Object.keys(colors).length ? colors : undefined
 }
 
 @Injectable()
@@ -104,8 +104,10 @@ export class OverlayService {
         const scene = data.scene === undefined ? "intermission" : data.scene
         if (!["intermission", "starting_soon", "stream_ending", "widgets"].includes(scene as string))
             throw new BadRequestException("Unbekannte Overlay-Szene.")
+        const theme = data.theme === undefined ? "default" : data.theme
+        if (!Object.hasOwn(OVERLAY_THEME_COLORS, theme as string)) throw new BadRequestException("Unbekanntes Theme.")
         const token = randomBytes(32).toString("base64url")
-        const layout = overlayPreset(scene as OverlayScene, [randomUUID(), randomUUID()])
+        const layout = overlayPreset(scene as OverlayScene, [randomUUID(), randomUUID()], theme as OverlayTheme)
         const browserToken = await this.tokenEncryption.encrypt(token)
         const overlay = await this.repository.createScene(guildId, name, hashToken(token), layout, browserToken)
         if (!overlay) throw new ConflictException("Maximal 20 Szenen pro Server sind erlaubt.")
@@ -119,7 +121,7 @@ export class OverlayService {
         const saved = await this.repository.saveLayout(guildId, overlayId, layout)
         if (!saved)
             throw new BadRequestException(
-                "Das gewählte Medium gehört nicht zu diesem Server, wurde gelöscht oder hat den falschen Typ."
+                "Das gewählte Medium gehört nicht zu diesem Server oder wurde gelöscht."
             )
         this.logger.info(
             `Overlay scene layout saved guild=${guildId} overlay=${overlayId} widgets=${saved.widgets.length}`
@@ -188,13 +190,6 @@ export class OverlayService {
         const scene = ["intermission", "starting_soon", "stream_ending"].includes(settings?.scene as string)
             ? (settings!.scene as OverlayScene)
             : "widgets"
-        const socialSettings =
-            settings?.socials && typeof settings.socials === "object" && !Array.isArray(settings.socials)
-                ? (settings.socials as Record<string, unknown>)
-                : {}
-        const socials: {twitch?: string; twitter?: string; discord?: string} = {}
-        for (const key of ["twitch", "twitter", "discord"] as const)
-            if (typeof socialSettings[key] === "string") socials[key] = socialSettings[key].slice(0, 100)
         return {
             id: overlay.id,
             guildId: overlay.guildId,
@@ -203,86 +198,36 @@ export class OverlayService {
                 width: OVERLAY_WIDTH,
                 height: OVERLAY_HEIGHT,
                 theme,
+                themeColors: storedThemeColors(settings?.themeColors),
                 scene,
                 font: settings?.font === "jersey10" ? "jersey10" : "tiny5",
-                socials,
                 guides: overlayGuides(settings?.guides),
-                widgets: overlay.widgets.map((widget) => this.toEditorWidget(widget, theme))
+                widgets: overlay.widgets
+                    .map((widget) => this.toEditorWidget(widget))
+                    .filter((widget): widget is EditorWidget => widget !== null)
             }
         }
     }
 
-    private toEditorWidget(widget: OverlayWidgetRecord, theme: OverlayTheme): EditorWidget {
+    private toEditorWidget(widget: OverlayWidgetRecord): EditorWidget | null {
+        if (!isWidgetType(widget.type)) {
+            this.logger.warn(`Skipping unknown overlay widget type=${widget.type} overlay=${widget.overlayId}`)
+            return null
+        }
         const geometry = {
             id: widget.id,
             x: widget.x,
             y: widget.y,
             width: widget.width,
             height: widget.height,
-            zIndex: widget.zIndex
+            zIndex: widget.zIndex,
+            label: widget.label ?? undefined,
+            hidden: widget.hidden ? true : undefined
         }
         const storedParams = widget.params as Record<string, unknown> | null
-        const design =
-            typeof storedParams?.design === "string" && isWidgetDesignId(storedParams.design)
-                ? storedParams.design
-                : theme
-        const designColors = storedDesignColors(storedParams?.designColors)
-        const appearance = {
-            design,
-            color: typeof storedParams?.color === "string" ? storedParams.color : "#ffffff",
-            backgroundColor:
-                typeof storedParams?.backgroundColor === "string" ? storedParams.backgroundColor : "#18181b",
-            ...(designColors ? {designColors} : {})
-        }
-        switch (widget.type) {
-            case "WINDOW": {
-                const params = storedParams as Partial<WindowWidgetParams> | null
-                return {
-                    ...geometry,
-                    type: "WINDOW",
-                    params: {
-                        ...appearance,
-                        title: params?.title ?? "Fenster",
-                        lockContentAspectRatio: params?.lockContentAspectRatio === true,
-                        greenScreen: params?.greenScreen === true
-                    }
-                }
-            }
-            case "SPOTIFY_NOW_PLAYING": {
-                const params = storedParams as Partial<SpotifyWidgetParams> | null
-                return {
-                    ...geometry,
-                    type: "SPOTIFY_NOW_PLAYING",
-                    params: {
-                        ...appearance,
-                        spectralizer: params?.spectralizer === true,
-                        spectrumMode: params?.spectrumMode === "simulated" ? "simulated" : "audio",
-                        audioDeviceName: params?.audioDeviceName ?? ""
-                    }
-                }
-            }
-            case "TWITCH_CHAT": {
-                const params = storedParams as Partial<ChatWidgetParams> | null
-                return {
-                    ...geometry,
-                    type: "TWITCH_CHAT",
-                    params: {...TWITCH_CHAT_DEFAULTS, ...params, ...appearance}
-                }
-            }
-            case "IMAGE":
-            case "VIDEO": {
-                const params = storedParams as Partial<MediaWidgetParams> | null
-                return {
-                    ...geometry,
-                    type: widget.type,
-                    params: {
-                        ...appearance,
-                        assetId: params?.assetId ?? "",
-                        fit: params?.fit === "cover" ? "cover" : "contain"
-                    }
-                }
-            }
-        }
+        const appearance = normalizeAppearance(storedParams, "default")
+        const params = WIDGET_SPECS[widget.type].normalize(storedParams, appearance)
+        return {...geometry, type: widget.type, params} as EditorWidget
     }
 
     private browserSourceUrl(token: string): string {

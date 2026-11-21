@@ -19,7 +19,7 @@ const overlay = {
     id: "scene-audit",
     guildId: asset.guildId,
     tokenHash: "ab".repeat(32),
-    widgets: [{type: "IMAGE", params: {assetId: asset.id}}]
+    widgets: [{type: "MEDIA", params: {assetId: asset.id}}]
 }
 const previousSecret = process.env.AUTH_SECRET
 beforeEach(() => {

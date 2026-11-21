@@ -1,7 +1,7 @@
 "use client"
 
 import {useCallback, useEffect, useRef, useState} from "react"
-import type {GuildOverlay, OverlayLink, OverlayScene} from "@streamcat/interfaces"
+import type {GuildOverlay, OverlayLink, OverlayScene, OverlayTheme} from "@streamcat/interfaces"
 import {isAuthError, postJson, type OverlayRequest} from "../api/transport"
 import {useLayoutHistory} from "../history/use-layout-history"
 
@@ -113,11 +113,11 @@ export function useOverlayScenes(basePath: string, request: OverlayRequest, demo
         setError(null)
     }
 
-    function createScene(name: string, scene: OverlayScene) {
+    function createScene(name: string, scene: OverlayScene, theme: OverlayTheme = "default") {
         return run("create", async (signal) => {
             const result = await request<{overlay: GuildOverlay; browserSourceUrl: string}>(
                 `${path}/scenes`,
-                postJson({name, scene}, signal)
+                postJson({name, scene, theme}, signal)
             )
             if (signal.aborted) return
             setOverlay(result.overlay)
