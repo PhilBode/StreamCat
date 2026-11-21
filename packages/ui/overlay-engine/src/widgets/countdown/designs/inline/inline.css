@@ -1,0 +1,5 @@
+.overlay-countdown--inline {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 12px;
+}

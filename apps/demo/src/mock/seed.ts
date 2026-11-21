@@ -32,8 +32,18 @@ const SEEDS: Seed[] = [
 function tuneLayout(layout: OverlayLayout): OverlayLayout {
     return {
         ...layout,
-        socials: {twitch: "streamcatdemo", twitter: "streamcatdemo", discord: "streamcatdemo"},
         widgets: layout.widgets.map((widget) => {
+            if (widget.type === "SOCIALS") {
+                return {
+                    ...widget,
+                    params: {
+                        ...widget.params,
+                        twitch: "streamcatdemo",
+                        twitter: "streamcatdemo",
+                        discord: "streamcatdemo"
+                    }
+                }
+            }
             if (widget.type === "SPOTIFY_NOW_PLAYING") {
                 return {
                     ...widget,

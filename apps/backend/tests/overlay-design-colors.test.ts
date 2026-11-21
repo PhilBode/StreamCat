@@ -9,11 +9,8 @@ const overlay = {
     name: "Scene",
     tokenHash: "a".repeat(64),
     browserToken: "encrypted-token",
-    type: "STATIC" as const,
     backgroundAssetId: null,
-    settings: {theme: "default", font: "tiny5"},
-    customHtml: null,
-    customCss: null,
+    settings: {theme: "default", font: "tiny5", themeColors: {primary: "#123456"}},
     updatedAt: date,
     widgets: [
         {
@@ -25,6 +22,8 @@ const overlay = {
             width: 640,
             height: 300,
             zIndex: 1,
+            label: "Spotify",
+            hidden: true,
             params: {
                 design: "default",
                 color: "#ffffff",
@@ -53,6 +52,9 @@ const service = new OverlayService(
 test("stored design color overrides survive the dashboard mapping", async () => {
     const [scene] = await service.scenes("guild")
     expect(scene?.layout.widgets[0]?.params.designColors).toEqual({"--progress-color": "#ff0000"})
+    expect(scene?.layout.themeColors).toEqual({primary: "#123456"})
+    expect(scene?.layout.widgets[0]?.label).toBe("Spotify")
+    expect(scene?.layout.widgets[0]?.hidden).toBe(true)
 })
 
 test("stored browser tokens are returned as scene links", async () => {

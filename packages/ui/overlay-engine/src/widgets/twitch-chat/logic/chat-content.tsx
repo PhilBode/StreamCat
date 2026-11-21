@@ -5,6 +5,7 @@ import {
     type EditorWidget,
     type OverlayChat
 } from "@streamcat/interfaces"
+import "../designs/chat-base.css"
 
 type TwitchChatWidget = Extract<EditorWidget, {type: "TWITCH_CHAT"}>
 

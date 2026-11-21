@@ -1,11 +1,12 @@
-import {OVERLAY_WIDTH, OVERLAY_HEIGHT, type EditorWidget} from "./overlay-dashboard"
+import {OVERLAY_WIDTH, OVERLAY_HEIGHT} from "./constants"
+import type {WidgetGeometry} from "./widgets/types"
 
 export const WINDOW_HEADER_HEIGHT = 32.4
 export const WINDOW_CONTENT_BORDER = 1
 export const WINDOW_CONTENT_RATIO = 16 / 9
 export const WINDOW_CORNER_RADIUS = 10.8
 
-export function windowContentBounds(widget: Pick<EditorWidget, "x" | "y" | "width" | "height">) {
+export function windowContentBounds(widget: Pick<WidgetGeometry, "x" | "y" | "width" | "height">) {
     return {
         x: widget.x + WINDOW_CONTENT_BORDER,
         y: widget.y + WINDOW_HEADER_HEIGHT,
@@ -15,7 +16,7 @@ export function windowContentBounds(widget: Pick<EditorWidget, "x" | "y" | "widt
 }
 
 export function scaleOverlayBounds(
-    bounds: Pick<EditorWidget, "x" | "y" | "width" | "height">,
+    bounds: Pick<WidgetGeometry, "x" | "y" | "width" | "height">,
     baseWidth: number,
     baseHeight: number
 ) {

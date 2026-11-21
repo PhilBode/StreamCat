@@ -1,21 +1,39 @@
-import type {EditorWidgetType} from "@streamcat/interfaces"
+import type {WidgetType} from "@streamcat/interfaces"
 import type {WidgetModule} from "./types"
-import {imageModule, videoModule} from "./media"
+import {backgroundModule} from "./background"
+import {clockModule} from "./clock"
+import {countdownModule} from "./countdown"
+import {mediaModule} from "./media"
+import {progressModule} from "./progress"
+import {shapeModule} from "./shape"
+import {socialsModule} from "./socials"
 import {spotifyModule} from "./spotify"
+import {textModule} from "./text"
+import {tickerModule} from "./ticker"
 import {twitchChatModule} from "./twitch-chat"
 import {windowModule} from "./window"
 
-export const WIDGET_MODULES: Record<EditorWidgetType, WidgetModule> = {
+export const WIDGET_MODULES: Record<WidgetType, WidgetModule> = {
     SPOTIFY_NOW_PLAYING: spotifyModule,
     TWITCH_CHAT: twitchChatModule,
     WINDOW: windowModule,
-    IMAGE: imageModule,
-    VIDEO: videoModule
+    MEDIA: mediaModule,
+    BACKGROUND: backgroundModule,
+    TEXT: textModule,
+    CLOCK: clockModule,
+    SOCIALS: socialsModule,
+    SHAPE: shapeModule,
+    COUNTDOWN: countdownModule,
+    TICKER: tickerModule,
+    PROGRESS: progressModule
 }
 
-export const WIDGET_CATALOG_TYPES = ["SPOTIFY_NOW_PLAYING", "TWITCH_CHAT", "WINDOW"] as const
-export type AddableWidgetType = (typeof WIDGET_CATALOG_TYPES)[number]
+export const WIDGET_CATALOG_TYPES = Object.values(WIDGET_MODULES)
+    .filter((module) => module.addable)
+    .map((module) => module.type)
 
-export function widgetModule(type: EditorWidgetType): WidgetModule {
+export type AddableWidgetType = WidgetType
+
+export function widgetModule(type: WidgetType): WidgetModule {
     return WIDGET_MODULES[type]
 }

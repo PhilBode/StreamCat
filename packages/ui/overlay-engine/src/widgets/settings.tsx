@@ -4,12 +4,11 @@ import {useState} from "react"
 import {SidebarSection, Select} from "../ui/dialog"
 import {
     OVERLAY_COLOR_TEMPLATES,
-    OVERLAY_WIDTH,
     OVERLAY_HEIGHT,
+    OVERLAY_THEME_COLORS,
+    OVERLAY_WIDTH,
     MIN_WIDGET_WIDTH,
     MIN_WIDGET_HEIGHT,
-    TWITCH_CHAT_DEFAULTS,
-    TWITCH_CHAT_FONTS,
     withWidgetColors,
     windowWidth,
     windowHeight,
@@ -45,51 +44,6 @@ function withDesignColor<T extends EditorWidget>(widget: T, key: `--${string}`, 
     }
 }
 
-function moduleSectionLabel(type: EditorWidget["type"]) {
-    if (type === "SPOTIFY_NOW_PLAYING") return "Audio Einstellungen"
-    if (type === "TWITCH_CHAT") return "Overlay Einstellungen"
-    if (type === "WINDOW") return "Fenster"
-    if (type === "IMAGE" || type === "VIDEO") return "Bild Einstellungen"
-    return "Einstellungen"
-}
-
-function moduleSectionSummary(widget: EditorWidget, assets: OverlayAsset[]) {
-    switch (widget.type) {
-        case "TWITCH_CHAT": {
-            const fontName =
-                typeof widget.params.chatFont === "number"
-                    ? (TWITCH_CHAT_FONTS[widget.params.chatFont] ?? "Schrift")
-                    : (widget.params.chatFont ?? "Schrift")
-            const fade = widget.params.chatFade ?? TWITCH_CHAT_DEFAULTS.chatFade
-            return `${widget.params.chatChannel || "Kanal"} - ${fontName} - Fade ${fade}s`
-        }
-        case "SPOTIFY_NOW_PLAYING": {
-            if (widget.params.spectralizer !== true) return "Spektrum aus"
-            const mode = widget.params.spectrumMode === "simulated" ? "Simuliert" : "Audioeingang"
-            const audio =
-                widget.params.spectrumMode === "audio"
-                    ? ` // Audio: ${widget.params.audioDeviceName || "Standard"}`
-                    : ""
-            return `Spektrum an // Modus: ${mode}${audio}`
-        }
-        case "WINDOW": {
-            const title = widget.params.title || "Fenstertitel"
-            const ratio = widget.params.lockContentAspectRatio === true ? "16:9" : "Frei"
-            const green = widget.params.greenScreen === true ? "Greenscreen" : "Kein Greenscreen"
-            return `${title} - ${ratio} - ${green}`
-        }
-        case "IMAGE":
-        case "VIDEO": {
-            const asset = widget.params.assetId ? assets.find((item) => item.id === widget.params.assetId) : null
-            const name = asset?.fileName ?? (widget.type === "VIDEO" ? "Video" : "Bild")
-            const fit = widget.params.fit === "cover" ? "Fläche ausfüllen" : "Ganzes Bild"
-            return `${name} - ${fit}`
-        }
-        default:
-            return null
-    }
-}
-
 export function WidgetSettings({
     widget,
     assets = [],
@@ -115,16 +69,21 @@ export function WidgetSettings({
     theme?: OverlayTheme
     themeColors?: OverlayLayout["themeColors"]
 }) {
-    const themeTemplate = OVERLAY_COLOR_TEMPLATES[theme === "default" ? "standard" : theme]
-    const themeColor = (key: `--${string}`): string | undefined => {
-        if (key === "--window-bg") return themeColors?.window ?? themeTemplate.tokens?.["--window-bg"]
-        if (key === "--progress-color") return themeColors?.primary ?? themeTemplate.tokens?.["--progress-color"]
-        return undefined
-    }
     const locked = widget.type === "WINDOW" && widget.params.lockContentAspectRatio === true
     const module = widgetModule(widget.type)
     const Settings = module.settings
     const design = module.designs[widget.params.design] ?? module.designs[module.defaultDesign]
+    const themeTemplate = OVERLAY_COLOR_TEMPLATES[theme === "default" ? "standard" : theme]
+    const themePalette = OVERLAY_THEME_COLORS[theme]
+    const themeColor = (key: `--${string}`): string | undefined => {
+        if (key === "--window-bg") return themeColors?.window ?? themeTemplate.tokens?.["--window-bg"]
+        if (key === "--progress-color") return themeColors?.primary ?? themeTemplate.tokens?.["--progress-color"]
+        if (key === "--gradient-start") return themeColors?.surface ?? themePalette.gradientStart
+        if (key === "--gradient-end") return themeColors?.secondary ?? themePalette.gradientEnd
+        if (key === "--scene-text" || key === "--clock-date-color" || key === "--countdown-label-color")
+            return themeColors?.text ?? themePalette.color
+        return undefined
+    }
     const [renaming, setRenaming] = useState(false)
     const [renameValue, setRenameValue] = useState("")
     const limits = {
@@ -170,7 +129,7 @@ export function WidgetSettings({
         onChange({...widget, [field]: Math.min(limits[field][1], Math.max(limits[field][0], parsedValue))})
     }
 
-    const summary = moduleSectionSummary(widget, assets)
+    const summary = module.sectionSummary?.(widget, assets) ?? null
 
     return (
         <section className="overlay-settings">
@@ -311,7 +270,7 @@ export function WidgetSettings({
                 </SidebarSection>
             </div>
             <div className="overlay-settings-block">
-                <SidebarSection label={moduleSectionLabel(widget.type)} summary={summary}>
+                <SidebarSection label={module.sectionLabel} summary={summary}>
                     <div className="overlay-settings-section-content">
                         <Settings
                             widget={widget}

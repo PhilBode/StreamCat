@@ -7,12 +7,6 @@ import {Dialog, EditorTab, Select} from "../ui/dialog"
 import {TrashIcon} from "../ui/icons"
 import {widgetModule, WIDGET_CATALOG_TYPES, type AddableWidgetType} from "../widgets/registry"
 
-const CATEGORY_OF: Record<AddableWidgetType, string> = {
-    SPOTIFY_NOW_PLAYING: "Audio",
-    TWITCH_CHAT: "Chat",
-    WINDOW: "Fenster"
-}
-
 export function AddDialog({
     defaultTab,
     widgetCount,
@@ -52,29 +46,37 @@ export function AddDialog({
 
     const widgets = useMemo(() => {
         const query = search.trim().toLowerCase()
-        return WIDGET_CATALOG_TYPES.filter((type) =>
-            query
-                ? widgetModule(type).label.toLowerCase().includes(query) ||
-                  CATEGORY_OF[type].toLowerCase().includes(query)
-                : true
-        )
+        return WIDGET_CATALOG_TYPES.filter((type) => {
+            if (!query) return true
+            const module = widgetModule(type)
+            return [module.label, module.description, module.category].some((value) =>
+                value.toLowerCase().includes(query)
+            )
+        })
     }, [search])
 
     const counts = useMemo(() => {
         const query = search.trim().toLowerCase()
-        const matches = (type: AddableWidgetType) =>
-            query
-                ? widgetModule(type).label.toLowerCase().includes(query) ||
-                  CATEGORY_OF[type].toLowerCase().includes(query)
-                : true
+        const matches = (type: AddableWidgetType) => {
+            if (!query) return true
+            const module = widgetModule(type)
+            return [module.label, module.description, module.category].some((value) =>
+                value.toLowerCase().includes(query)
+            )
+        }
         const result: Record<string, number> = {}
         for (const type of WIDGET_CATALOG_TYPES) {
-            const category = CATEGORY_OF[type]
+            const category = widgetModule(type).category
             result[category] = (result[category] ?? 0) + (matches(type) ? 1 : 0)
         }
         result["Alle"] = widgets.length
         return result
     }, [widgets, search])
+
+    const categories = useMemo(
+        () => ["Alle", ...new Set(WIDGET_CATALOG_TYPES.map((type) => widgetModule(type).category))],
+        []
+    )
 
     const widgetFull = widgetCount >= maxWidgets
     const selectedAsset = assets.find((asset) => asset.id === assetId) ?? null
@@ -163,12 +165,7 @@ export function AddDialog({
                             />
                         </div>
                         <ul className="overlay-add-categories">
-                            {[
-                                "Alle",
-                                ...Object.keys(CATEGORY_OF)
-                                    .map((type) => CATEGORY_OF[type as AddableWidgetType])
-                                    .filter((value, index, list) => list.indexOf(value) === index)
-                            ].map((category) => (
+                            {categories.map((category) => (
                                 <li key={category}>
                                     <span>{category}</span>
                                     <span className="overlay-add-count">{counts[category] ?? 0}</span>
@@ -180,22 +177,26 @@ export function AddDialog({
                         </p>
                     </div>
                     <div className="overlay-add-widget-cards">
-                        {widgets.map((type) => (
-                            <button
-                                key={type}
-                                type="button"
-                                className={`overlay-add-widget-card ${widgetType === type ? "overlay-add-widget-card--active" : ""}`}
-                                onClick={() => selectWidget(type)}
-                            >
-                                <span className="overlay-add-widget-glyph" aria-hidden="true">
-                                    {type === "SPOTIFY_NOW_PLAYING" ? "♫" : type === "TWITCH_CHAT" ? "#" : "▣"}
-                                </span>
-                                <span className="overlay-add-widget-label">{widgetModule(type).label}</span>
-                                <span className="overlay-add-widget-designs">
-                                    {Object.keys(widgetModule(type).designs).length} Designs
-                                </span>
-                            </button>
-                        ))}
+                        {widgets.map((type) => {
+                            const module = widgetModule(type)
+                            const Glyph = module.glyph
+                            return (
+                                <button
+                                    key={type}
+                                    type="button"
+                                    className={`overlay-add-widget-card ${widgetType === type ? "overlay-add-widget-card--active" : ""}`}
+                                    onClick={() => selectWidget(type)}
+                                >
+                                    <span className="overlay-add-widget-glyph" aria-hidden="true">
+                                        <Glyph />
+                                    </span>
+                                    <span className="overlay-add-widget-label">{module.label}</span>
+                                    <span className="overlay-add-widget-designs">
+                                        {Object.keys(module.designs).length} Designs
+                                    </span>
+                                </button>
+                            )
+                        })}
                     </div>
                 </div>
             )}

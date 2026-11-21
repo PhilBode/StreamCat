@@ -1,4 +1,3 @@
-import type {OverlayType} from "@streamcat/interfaces"
 import type {JsonValue} from "./json-value"
 import type {OverlayWidgetRecord} from "./overlay-widget"
 
@@ -8,11 +7,8 @@ export interface StoredOverlay {
     name: string
     tokenHash: string
     browserToken: string | null
-    type: OverlayType
     backgroundAssetId: string | null
     settings: JsonValue | null
-    customHtml: string | null
-    customCss: string | null
     updatedAt: Date
     widgets: OverlayWidgetRecord[]
 }

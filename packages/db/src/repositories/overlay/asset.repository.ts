@@ -75,7 +75,7 @@ export class AssetRepository {
                         {
                             widgets: {
                                 some: {
-                                    type: {in: ["IMAGE", "VIDEO"]},
+                                    type: "MEDIA",
                                     params: {path: ["assetId"], equals: assetId}
                                 }
                             }

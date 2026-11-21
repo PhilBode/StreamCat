@@ -2,6 +2,7 @@
 
 import {useState} from "react"
 import {isMediaWidget, type EditorWidget, type OverlayAsset, type OverlayLayout} from "@streamcat/interfaces"
+import {widgetModule} from "../registry"
 import {widgetName} from "./widget-name"
 
 export function moveWidgetToBackground(layout: OverlayLayout, widgetId: string): OverlayLayout {
@@ -27,83 +28,6 @@ export function moveWidgetToBackground(layout: OverlayLayout, widgetId: string):
             ...otherWidgets.map((widget, index) => ({...widget, zIndex: index + 1}))
         ]
     }
-}
-
-function glyphFor(type: EditorWidget["type"]) {
-    if (type === "SPOTIFY_NOW_PLAYING")
-        return (
-            <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <path
-                    d="M11.5 2.5V10.25C11.5 11.4926 10.4926 12.5 9.25 12.5C8.00736 12.5 7 11.4926 7 10.25C7 9.00736 8.00736 8 9.25 8C9.7757 8 10.262 8.18042 10.6514 8.48611V4.10938L6 5.25V11.75C6 12.9926 4.99264 14 3.75 14C2.50736 14 1.5 12.9926 1.5 11.75C1.5 10.5074 2.50736 9.5 3.75 9.5C4.2757 9.5 4.76203 9.68042 5.15137 9.98611V4.5L11.5 2.5Z"
-                    fill="currentColor"
-                />
-            </svg>
-        )
-    if (type === "TWITCH_CHAT")
-        return (
-            <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <path
-                    d="M2.25 2.25H13.75V3.25H2.25V2.25ZM2.25 5.25H13.75V6.25H2.25V5.25ZM2.25 8.25H13.75V9.25H2.25V8.25ZM2.25 11.25H13.75V12.25H2.25V11.25Z"
-                    fill="currentColor"
-                />
-                <rect x="1.75" y="1.75" width="12.5" height="12.5" stroke="currentColor" strokeWidth="1" fill="none" />
-            </svg>
-        )
-    if (type === "WINDOW")
-        return (
-            <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <rect x="2" y="2" width="12" height="12" stroke="currentColor" strokeWidth="1.2" fill="none" />
-                <rect x="4.5" y="4.5" width="7" height="4" fill="currentColor" />
-            </svg>
-        )
-    if (type === "VIDEO")
-        return (
-            <svg
-                aria-hidden="true"
-                width="16"
-                height="16"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-            >
-                <path d="M3 3.5L13 8L3 12.5V3.5Z" fill="currentColor" />
-            </svg>
-        )
-    return (
-        <svg
-            aria-hidden="true"
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-        >
-            <rect x="2" y="2" width="12" height="12" stroke="currentColor" strokeWidth="1.2" fill="none" />
-            <circle cx="6" cy="6" r="1.5" fill="currentColor" />
-            <path d="M3.5 12L7 8.5L9 10.5L11 8L12.5 9.5V13H3.5V12Z" fill="currentColor" />
-        </svg>
-    )
 }
 
 function DragHandleGlyph() {
@@ -213,6 +137,7 @@ export function WidgetLayers({
                 {ordered.map((widget, index) => {
                     const hidden = widget.hidden === true
                     const renaming = renamingId === widget.id
+                    const Glyph = widgetModule(widget.type).glyph
                     return (
                         <div
                             className={`overlay-layer-row ${selectedId === widget.id ? "overlay-layer-row--selected" : ""} ${
@@ -248,7 +173,7 @@ export function WidgetLayers({
                                 <DragHandleGlyph />
                             </span>
                             <span className="overlay-layer-glyph" aria-hidden="true">
-                                {glyphFor(widget.type)}
+                                <Glyph />
                             </span>
                             {renaming ? (
                                 <input

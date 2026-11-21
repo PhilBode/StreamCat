@@ -2,8 +2,9 @@ import type {EditorWidget} from "@streamcat/interfaces"
 import type {WidgetSettingsProps} from "../../types"
 import {Select} from "../../../ui/dialog"
 
-export function MediaSettings({widget: value, onChange, onSetBackground}: WidgetSettingsProps) {
-    const widget = value as Extract<EditorWidget, {type: "IMAGE" | "VIDEO"}>
+export function MediaSettings({widget: value, assets, onChange, onSetBackground}: WidgetSettingsProps) {
+    const widget = value as Extract<EditorWidget, {type: "MEDIA"}>
+    const asset = assets.find((item) => item.id === widget.params.assetId)
     return (
         <>
             <Select
@@ -23,7 +24,7 @@ export function MediaSettings({widget: value, onChange, onSetBackground}: Widget
             <button type="button" className="button" onClick={onSetBackground}>
                 Als Hintergrund
             </button>
-            {widget.type === "VIDEO" && (
+            {asset?.kind === "VIDEO" && (
                 <p className="overlay-settings-hint">Videos laufen automatisch, stumm und in einer Schleife.</p>
             )}
         </>

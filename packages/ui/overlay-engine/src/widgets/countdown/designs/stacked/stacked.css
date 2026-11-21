@@ -1,0 +1,5 @@
+.overlay-countdown--stacked {
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+}

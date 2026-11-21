@@ -10,9 +10,9 @@ const TEMPLATES: {
     hint: string
     kind: "intermission" | "starting_soon" | "stream_ending" | "widgets"
 }[] = [
-    {value: "intermission", label: "Intermission", hint: "4 Widgets", kind: "intermission"},
-    {value: "starting_soon", label: "Starting Soon", hint: "2 Widgets", kind: "starting_soon"},
-    {value: "stream_ending", label: "Stream Ending", hint: "2 Widgets", kind: "stream_ending"},
+    {value: "intermission", label: "Intermission", hint: "8 Widgets", kind: "intermission"},
+    {value: "starting_soon", label: "Starting Soon", hint: "8 Widgets", kind: "starting_soon"},
+    {value: "stream_ending", label: "Stream Ending", hint: "8 Widgets", kind: "stream_ending"},
     {value: "widgets", label: "Leer", hint: "0 Widgets", kind: "widgets"}
 ]
 

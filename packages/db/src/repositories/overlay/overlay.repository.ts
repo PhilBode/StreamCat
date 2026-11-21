@@ -90,7 +90,7 @@ export class OverlayRepository {
                 })
                 for (const widget of mediaWidgets) {
                     const asset = referencedAssets.find((asset) => asset.id === widget.params.assetId)
-                    if (!asset || asset.kind !== widget.type) {
+                    if (!asset) {
                         return null
                     }
                 }
@@ -121,9 +121,9 @@ function getLayoutSettings(layout: OverlayLayout) {
         width: layout.width,
         height: layout.height,
         theme: layout.theme,
+        themeColors: layout.themeColors ?? null,
         scene: layout.scene ?? "widgets",
         font: layout.font ?? "tiny5",
-        socials: layout.socials ?? {},
         guides: layout.guides ?? {vertical: [], horizontal: []}
     }
 }

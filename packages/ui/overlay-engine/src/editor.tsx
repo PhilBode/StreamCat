@@ -3,6 +3,7 @@
 import {useEffect, useState, type ElementType, type ReactNode} from "react"
 import {
     MAX_OVERLAY_WIDGETS,
+    WIDGET_SPECS,
     isMediaWidget,
     type EditorWidget,
     type OverlayChat,
@@ -184,28 +185,44 @@ function OverlaySession({
         if (window.confirm(`„${asset.fileName}“ endgültig löschen?`)) void media.removeAsset(asset)
     }
 
-    function addWidget(type: AddableWidgetType, design = "default") {
+    function addWidget(type: AddableWidgetType, design?: string) {
         if (!layout || layout.widgets.length >= MAX_OVERLAY_WIDGETS) return
         const module = widgetModule(type)
-        const moduleDesign = module.designs[design] ?? module.designs[module.defaultDesign]
+        const moduleDesign = (design ? module.designs[design] : undefined) ?? module.designs[module.defaultDesign]
+        const spec = WIDGET_SPECS[type]
+        const x = Math.max(0, Math.min(80 + (layout.widgets.length % 8) * 40, layout.width - spec.width))
+        const y = Math.max(0, Math.min(80 + (layout.widgets.length % 8) * 40, layout.height - spec.height))
         const widget: EditorWidget = {
             id: crypto.randomUUID(),
             type,
-            x: 80 + (layout.widgets.length % 8) * 40,
-            y: 80 + (layout.widgets.length % 8) * 40,
-            width: module.width,
-            height: module.height,
+            x,
+            y,
+            width: spec.width,
+            height: spec.height,
             zIndex: Math.min(1000, Math.max(0, ...layout.widgets.map((item) => item.zIndex)) + 1),
-            params: {
+            params: spec.defaults({
                 design: moduleDesign.id,
                 color: moduleDesign.color,
-                backgroundColor: moduleDesign.backgroundColor,
-                ...(type === "WINDOW" ? {title: "Fenster"} : {})
-            }
-        }
+                backgroundColor: moduleDesign.backgroundColor
+            }) as EditorWidget["params"]
+        } as EditorWidget
         setLayout({...layout, widgets: [...layout.widgets, widget]})
         setSelection({type: "widget", id: widget.id})
         setNotice(null)
+    }
+
+    function mediaParams(assetId: string, fit: "contain" | "cover") {
+        const module = widgetModule("MEDIA")
+        const design = module.designs[module.defaultDesign]
+        return {
+            ...WIDGET_SPECS.MEDIA.defaults({
+                design: design.id,
+                color: "#ffffff",
+                backgroundColor: "transparent"
+            }),
+            assetId,
+            fit
+        }
     }
 
     function addPlacedAsset(asset: OverlayAsset, asBackground: boolean, fit: "contain" | "cover") {
@@ -225,15 +242,9 @@ function OverlaySession({
               }
         const widget: EditorWidget = {
             id,
-            type: asset.kind,
+            type: "MEDIA",
             ...background,
-            params: {
-                design: layout.theme,
-                color: "#ffffff",
-                backgroundColor: "transparent",
-                assetId: asset.id,
-                fit
-            }
+            params: mediaParams(asset.id, fit)
         }
         setLayout({...layout, widgets: [...layout.widgets, widget]})
         setSelection({type: "widget", id})
@@ -241,7 +252,7 @@ function OverlaySession({
     }
 
     async function createWithTheme(name: string, scene: OverlayScene, theme: OverlayTheme, font: OverlayFont) {
-        const created = await createScene(name, scene)
+        const created = await createScene(name, scene, theme)
         if (created) {
             setLayout((current) => (current ? {...current, theme, font} : current))
         }
@@ -256,19 +267,13 @@ function OverlaySession({
             const top = Math.max(0, ...current.widgets.map((widget) => widget.zIndex))
             const widgets: EditorWidget[] = available.map((asset, index) => ({
                 id: ids[index],
-                type: asset.kind,
+                type: "MEDIA",
                 x: Math.min(x + index * 30, current.width - 480),
                 y: Math.min(y + index * 30, current.height - 270),
                 width: 480,
                 height: 270,
                 zIndex: Math.min(1000, top + index + 1),
-                params: {
-                    design: current.theme,
-                    color: "#ffffff",
-                    backgroundColor: "transparent",
-                    assetId: asset.id,
-                    fit: "contain"
-                }
+                params: mediaParams(asset.id, "contain")
             }))
             return {...current, widgets: [...current.widgets, ...widgets]}
         })

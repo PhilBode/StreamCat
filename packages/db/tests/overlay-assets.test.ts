@@ -52,7 +52,7 @@ databaseTest("asset deletion preserves used media and serializes with layout sav
             widgets: [
                 {
                     id: randomUUID(),
-                    type: "IMAGE",
+                    type: "MEDIA",
                     x: 0,
                     y: 0,
                     width: 300,
@@ -90,7 +90,7 @@ databaseTest("asset deletion preserves used media and serializes with layout sav
             widgets: [
                 {
                     ...layout.widgets[0],
-                    type: "IMAGE",
+                    type: "MEDIA",
                     params: {assetId: raceAsset.id, color: "#ffffff", backgroundColor: "transparent"}
                 }
             ]

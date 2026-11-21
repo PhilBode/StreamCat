@@ -978,9 +978,6 @@
     padding: var(--space-1) var(--space-2);
     cursor: pointer;
 }
-.overlay-scene-toggle {
-    margin: var(--space-2) 0;
-}
 .overlay-switch-confirm .actions {
     margin-top: var(--space-3);
 }
@@ -1108,6 +1105,9 @@
     background: var(--color-paper-3);
 }
 .overlay-add-widget-glyph {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     color: var(--color-ink-2);
     font-size: 16px;
     line-height: 1;

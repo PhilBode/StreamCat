@@ -1,16 +1,17 @@
-import type {WidgetType} from "@streamcat/interfaces"
 import type {JsonValue} from "./json-value"
 
 export interface OverlayWidgetRecord {
     id: string
     overlayId: string
-    type: WidgetType
+    type: string
     x: number
     y: number
     width: number
     height: number
     zIndex: number
     params: JsonValue
+    label: string | null
+    hidden: boolean
     createdAt: Date
     updatedAt: Date
 }

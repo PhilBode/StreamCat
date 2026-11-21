@@ -13,6 +13,7 @@ import {
     type OverlayPlayback
 } from "@streamcat/interfaces"
 import {OverlayRenderer} from "./renderer"
+import {widgetModule} from "./widgets/registry"
 import {widgetName} from "./widgets/shared/widget-name"
 import {ASSET_DRAG_TYPE} from "./assets/use-overlay-assets"
 import {snapWidget} from "./alignment/snap"
@@ -265,8 +266,7 @@ export function OverlayCanvas({
                                             width: widget.width,
                                             height: widget.height,
                                             zIndex: widget.zIndex,
-                                            borderRadius:
-                                                widget.type === "IMAGE" || widget.type === "VIDEO" ? 0 : undefined
+                                            borderRadius: widgetModule(widget.type).frame === "none" ? 0 : undefined
                                         }}
                                         onFocus={() => {
                                             onSelect({type: "widget", id: widget.id})

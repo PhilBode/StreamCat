@@ -1,0 +1,84 @@
+.overlay-text-plain {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-start;
+    color: var(--scene-text, inherit);
+    font-size: var(--text-size, 134.4px);
+    font-weight: var(--text-weight, bold);
+    letter-spacing: var(--text-spacing, 0);
+    line-height: 1.3;
+    filter: drop-shadow(-9.6px 10.8px 5px var(--text-shadow, #00000080));
+}
+
+.overlay-text-plain-main {
+    display: inline-block;
+    white-space: pre-wrap;
+}
+
+.overlay-text-plain.overlay-text-align-left {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.overlay-text-plain.overlay-text-align-center {
+    justify-content: center;
+    text-align: center;
+}
+
+.overlay-text-plain.overlay-text-align-right {
+    justify-content: flex-end;
+    text-align: right;
+}
+
+.overlay-text-plain.overlay-text-animation-bounce .overlay-text-plain-main {
+    animation: overlay-text-plain-bounce var(--text-animation, 1.4s) infinite;
+}
+
+.overlay-text-plain.overlay-text-animation-pulse .overlay-text-plain-main {
+    animation: overlay-text-plain-pulse var(--text-animation, 1.4s) infinite;
+}
+
+.overlay-text-plain.overlay-text-animation-typewriter .overlay-text-plain-main {
+    overflow: hidden;
+    animation: overlay-text-plain-typewriter var(--text-animation, 1.4s) steps(var(--text-chars, 12)) infinite;
+    clip-path: inset(0 100% 0 0);
+}
+
+@keyframes overlay-text-plain-bounce {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(10px);
+    }
+}
+
+@keyframes overlay-text-plain-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.55;
+    }
+}
+
+@keyframes overlay-text-plain-typewriter {
+    from {
+        clip-path: inset(0 100% 0 0);
+    }
+    to {
+        clip-path: inset(0 0 0 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .overlay-text-plain.overlay-text-animation-bounce .overlay-text-plain-main,
+    .overlay-text-plain.overlay-text-animation-pulse .overlay-text-plain-main,
+    .overlay-text-plain.overlay-text-animation-typewriter .overlay-text-plain-main {
+        animation: none;
+        clip-path: none;
+    }
+}

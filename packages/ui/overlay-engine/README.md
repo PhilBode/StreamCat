@@ -40,33 +40,62 @@ Fonts, fallback theme and all overlay CSS ship with the package. No separate ass
 
 ## Widget designs
 
-Each widget owns its design components:
+Widget types come from `WIDGET_SPECS` in `packages/interfaces/src/overlay/widgets/`. That list is the only widget type source used by the editor, the renderer and the backend.
+
+Each widget owns its folder:
 
 ```text
 widgets/
-  registry.ts
-  settings.tsx
-  types.ts
-  shared/
-  spotify/
+  clock/
     index.ts
-    logic/
     designs/
-      artwork.tsx
-      default.ts
-      autumn.ts
-      winter.ts
+      stacked/
+        index.ts
+        stacked.tsx
+        stacked.css
+      inline/
+        index.ts
+        inline.tsx
+        inline.css
+    logic/
+      clock-widget.tsx
+      use-clock.ts
+      clock-settings.tsx
+      clock-glyph.tsx
 ```
 
-Each design file exports one complete design definition: id, label, defaults, `colorControls`, optional design `settings`, and the component. The widget's `index.ts` only aggregates them. Adding a design means adding one definition file and one entry in that widget module.
+Rules:
 
-Built-in designs: Spotify `default`/`autumn`/`winter`, Twitch chat `windowed`/`none`, Window `default`/`autumn`/`winter`, Image/Video `default`/`autumn`/`winter`.
+- `index.ts` aggregates the widget module and metadata. It contains no JSX and imports no CSS.
+- Each design folder exports one `WidgetDesign` and imports its own CSS from the TSX file.
+- CSS shared by several designs of the same widget lives in `designs/<widget>-base.css`.
+- `logic/` holds behavior, hooks, settings and the layer glyph.
+- Widget-specific CSS never lives in `styles/renderer.css` or `styles/editor.css`.
 
-Color templates live in `packages/interfaces/src/overlay/color-templates.ts` as `OVERLAY_COLOR_TEMPLATES`. Scene themes and widget design defaults both use them, so the source of a color is always that file.
+Every design declares `colorControls`. The editor sidebar renders that list directly; it does not keep a hardcoded color list.
+
+Built-in designs:
+
+- Spotify `artwork`
+- Twitch chat `windowed`, `none`
+- Window `windowed`
+- Media `media`
+- Background `animated`, `solid`
+- Text `headline`, `plain`
+- Clock `stacked`, `inline`
+- Socials `inline`, `icons`
+- Shape `rect`, `line`, `ellipse`
+- Countdown `stacked`, `inline`
+- Ticker `marquee`
+- Progress `bar`
+
+Color templates live in `packages/interfaces/src/overlay/color-templates.ts` as `OVERLAY_COLOR_TEMPLATES`. Scene themes and preset defaults both use them.
 
 `colorControls` declare what the editor may change. Keys are `color`, `backgroundColor`, or CSS custom properties such as `--window-bg`. Defaults come from the design's `color`, `backgroundColor` and `tokens`; user values are stored in `params.color`, `params.backgroundColor` and `params.designColors`.
 
 Design components must use `currentColor` or CSS variables for customizable parts. Color-control defaults must be hex values because the editor uses a native color picker.
+
+Starter scenes are built only from widgets. `overlayPreset()` creates background, title, taskbar, socials and clock as normal layers, so every scene element can be selected, moved, styled and deleted.
 
 ## Usage
 
