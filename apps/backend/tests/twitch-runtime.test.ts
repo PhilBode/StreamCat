@@ -153,6 +153,39 @@ test("async subscription failure clears the failed object, reports degradation a
     expect(state.manager.isReady).toBe(true)
 })
 
+test("signature mismatch drops the tracked subscription and schedules recreation", async () => {
+    const state = setup()
+    await state.manager.start()
+    const subscription = state.subscriptions.get(`stream.online.${userId}`)
+    state.runtime.handleWebhookObservation({
+        subscriptionId: subscription.id,
+        messageType: "notification",
+        bytes: 42,
+        signatureValid: false,
+        ageMs: 5
+    })
+    expect(state.runtime.subscriptions.has(userId)).toBe(false)
+    expect(subscription.stop).toHaveBeenCalledTimes(1)
+    expect(state.runtime.failedSubscriptions.has(userId)).toBe(true)
+    expect(state.log.warn.mock.calls.some(([message]) => String(message).includes("signature rejected"))).toBe(true)
+    clearTimeout(state.runtime.retryTimer)
+})
+
+test("untracked followed subscription is deleted, Twurple cache refreshed, then recreated", async () => {
+    const state = setup()
+    await state.manager.start()
+    const deleteSubscription = mock(async () => {})
+    const markAsReady = mock(async () => {})
+    state.runtime.appClient = {eventSub: {deleteSubscription}}
+    state.runtime.httpListener = {...state.ws, markAsReady}
+    await state.runtime.recoverUntrackedSubscription(`stream.online.${userId}`)
+    expect(deleteSubscription).toHaveBeenCalledWith(`stream.online.${userId}`)
+    expect(markAsReady).toHaveBeenCalledTimes(1)
+    expect(state.runtime.failedSubscriptions.has(userId)).toBe(true)
+    expect(state.log.info.mock.calls.some(([message]) => String(message).includes("Removed untracked"))).toBe(true)
+    clearTimeout(state.runtime.retryTimer)
+})
+
 test("repeated persisted-follow reconciliation does not add reference counts or overwrite listener objects", async () => {
     const state = setup()
     await state.manager.start()
@@ -340,6 +373,57 @@ test("webhooks share the HTTP router and preserve remote subscriptions on shutdo
         expect(removed).not.toHaveBeenCalled()
         expect(remove).not.toHaveBeenCalled()
         expect(state.manager.isWebhookActive).toBe(false)
+    } finally {
+        for (const [key, value] of Object.entries(previous)) {
+            if (value === undefined) delete process.env[key]
+            else process.env[key] = value
+        }
+    }
+})
+
+test("startup removes webhook subscriptions for channels no guild follows anymore", async () => {
+    const state = setup()
+    state.runtime.startWebhook.mockRestore()
+    const environment = {
+        PUBLIC_URL: "https://hooks.example.test",
+        EVENTSUB_SECRET: "test-webhook-secret",
+        TWITCH_APP_CLIENT_ID: "test-client",
+        TWITCH_APP_SECRET: "test-secret"
+    }
+    const previous = Object.fromEntries(Object.keys(environment).map((key) => [key, process.env[key]]))
+    Object.assign(process.env, environment)
+    const router = {use: mock(() => {}), post: mock(() => {}), get: mock(() => {})}
+    const callback = (channelId: string) => `https://hooks.example.test/eventsub/event/stream.online.${channelId}`
+    const remote = (channelId: string) => ({
+        id: `stream.online.${channelId}`,
+        type: "stream.online",
+        status: "enabled",
+        transportMethod: "webhook",
+        condition: {broadcaster_user_id: channelId},
+        _transport: {method: "webhook", callback: callback(channelId)}
+    })
+    const followed = remote(userId)
+    const orphan = remote("999999")
+    const remove = spyOn(HelixEventSubApi.prototype, "deleteSubscription").mockResolvedValue(undefined)
+    spies.push(
+        remove,
+        spyOn(HelixEventSubApi.prototype, "createSubscription").mockRejectedValue(
+            new Error("Must reuse existing webhook")
+        ),
+        spyOn(HelixEventSubApi.prototype, "getSubscriptionsPaginated").mockReturnValue({
+            getAll: async () => [followed, orphan]
+        } as never)
+    )
+    try {
+        state.manager.attachWebhook(router as never)
+        await state.manager.markWebhookReady()
+        await state.manager.start()
+        expect(remove).toHaveBeenCalledTimes(1)
+        expect(remove).toHaveBeenCalledWith(orphan.id)
+        expect(state.manager.isWebhookActive).toBe(true)
+        expect(state.manager.activeStreamSubscriptionCount).toBe(1)
+        expect(state.log.info.mock.calls.some(([message]) => String(message).includes("Removed orphaned"))).toBe(true)
+        expect(state.log.info.mock.calls.some(([message]) => String(message).includes("kept=1 removed=1"))).toBe(true)
     } finally {
         for (const [key, value] of Object.entries(previous)) {
             if (value === undefined) delete process.env[key]

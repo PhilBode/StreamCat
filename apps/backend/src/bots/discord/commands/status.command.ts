@@ -71,7 +71,10 @@ export class StatusCommand implements Command {
 
         fields.push({
             name: "Twitch EventSub",
-            value: this.eventSub.startupState === "ready" ? "✅ Connected" : "⚠️ Not ready"
+            value:
+                this.eventSub.startupState === "ready"
+                    ? `✅ Connected (${this.eventSub.activeStreamSubscriptionCount} stream subscriptions)`
+                    : `⚠️ Not ready (active=${this.eventSub.activeStreamSubscriptionCount} pending=${this.eventSub.pendingStreamSubscriptionCount} failed=${this.eventSub.failedStreamSubscriptionCount})`
         })
 
         if (streams.length > 0) {

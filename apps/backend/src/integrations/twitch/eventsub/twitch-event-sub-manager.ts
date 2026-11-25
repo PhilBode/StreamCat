@@ -5,6 +5,7 @@ import {AppTokenAuthProvider} from "@twurple/auth"
 import {EventSubMiddleware} from "@twurple/eventsub-http"
 import {EventSubWsListener} from "@twurple/eventsub-ws"
 import type {EventSubBase, EventSubSubscription} from "@twurple/eventsub-base"
+import {createHash} from "node:crypto"
 import type {IRouter} from "express"
 import {apiHost, BotLoggerService, errorDetails, type ModuleLogger, requireEnv} from "@streamcat/core"
 import {TwitchAuthProvider} from "../auth/twitch-auth-provider"
@@ -12,7 +13,26 @@ import {TwitchConfigRepository} from "@streamcat/db"
 import {TwitchService} from "../services/twitch.service"
 import {TwitchSubscriptionService} from "./twitch-subscription.service"
 import {twitchSocketErrorDetails} from "./twitch-socket-error"
-import {protectTwitchWebhook} from "./webhook-security"
+import {createTwitchWebhookGuard, type TwitchWebhookObservation} from "./webhook-security"
+
+const EVENTSUB_PATH = "eventsub"
+const STREAM_ONLINE_EVENT = "stream.online"
+const STREAM_ONLINE_SUBSCRIPTION_PREFIX = `${STREAM_ONLINE_EVENT}.`
+const STALE_NOTIFICATION_MS = 10 * 60_000
+const RECOVERY_COOLDOWN_MS = 5 * 60_000
+const TWURPLE_LOG_LEVEL = {critical: 0, error: 1, warning: 2, info: 3} as const
+
+function twurpleLoggerOptions(logger: ModuleLogger): {custom: (level: number, message: string) => void} {
+    return {
+        custom: (level, message) => {
+            const line = `twurple ${message}`
+            if (level <= TWURPLE_LOG_LEVEL.error) logger.error(line)
+            else if (level === TWURPLE_LOG_LEVEL.warning) logger.warn(line)
+            else if (level === TWURPLE_LOG_LEVEL.info) logger.info(line)
+            else logger.debug(line)
+        }
+    }
+}
 
 @Injectable()
 export class TwitchEventSubManager implements OnModuleDestroy {
@@ -34,6 +54,9 @@ export class TwitchEventSubManager implements OnModuleDestroy {
     private readonly failedSubscriptions = new Set<string>()
     private readonly connectedWsUsers = new Set<string>()
     private webhookHost = ""
+    private webhookSecretFingerprint?: string
+    private readonly streamerNames = new Map<string, string>()
+    private readonly recoveryAttempts = new Map<string, number>()
     private streamListener?: StreamOnlineListener
     private redemptionListener?: RedemptionListener
     private readonly redemptionSubscriptions = new Map<
@@ -84,6 +107,10 @@ export class TwitchEventSubManager implements OnModuleDestroy {
         return this.subscriptions.pendingCount
     }
 
+    get failedStreamSubscriptionCount(): number {
+        return this.failedSubscriptions.size
+    }
+
     get isReady(): boolean {
         return (
             this.started &&
@@ -104,7 +131,7 @@ export class TwitchEventSubManager implements OnModuleDestroy {
     }
 
     get webhookUrl(): string | null {
-        return this.isWebhookActive ? `https://${this.webhookHost}/eventsub` : null
+        return this.isWebhookActive ? `https://${this.webhookHost}/${EVENTSUB_PATH}` : null
     }
 
     async start(): Promise<void> {
@@ -164,6 +191,7 @@ export class TwitchEventSubManager implements OnModuleDestroy {
             return
         }
 
+        this.streamerNames.delete(twitchUserId)
         if (sub) {
             try {
                 // Managed Twurple subscriptions delete themselves with their own auth context.
@@ -239,24 +267,133 @@ export class TwitchEventSubManager implements OnModuleDestroy {
         if (this.httpListener) return
         const secret = requireEnv("EVENTSUB_SECRET")
         this.webhookHost = apiHost()
+        this.webhookSecretFingerprint = createHash("sha256").update(secret).digest("hex").slice(0, 8)
         this.appClient = new ApiClient({
             authProvider: new AppTokenAuthProvider(requireEnv("TWITCH_APP_CLIENT_ID"), requireEnv("TWITCH_APP_SECRET"))
         })
         const listener = new EventSubMiddleware({
             apiClient: this.appClient,
             hostName: this.webhookHost,
-            pathPrefix: "eventsub",
+            pathPrefix: EVENTSUB_PATH,
             secret,
+            logger: twurpleLoggerOptions(this.logger),
             // Next changes Host to the internal service name. Twurple still verifies every HMAC.
             strictHostCheck: false
         })
-        router.use("/eventsub", protectTwitchWebhook)
+        router.use(
+            `/${EVENTSUB_PATH}`,
+            createTwitchWebhookGuard({
+                secret,
+                onObserved: (observation) => this.handleWebhookObservation(observation)
+            })
+        )
         listener.apply(router)
         this.httpListener = listener
         this.watchSubscriptionResults(listener)
         this.webhookReady = new Promise((resolve) => {
             this.resolveWebhookReady = resolve
         })
+        this.logger.debug(
+            `EventSub webhook configured host=${this.webhookHost} path=/${EVENTSUB_PATH} secret_fingerprint=${this.secretFingerprintLabel()}`
+        )
+    }
+
+    private secretFingerprintLabel(): string {
+        return this.webhookSecretFingerprint ?? "unknown"
+    }
+
+    private handleWebhookObservation(observation: TwitchWebhookObservation): void {
+        const subscriptionId = observation.subscriptionId
+        const userId = subscriptionId ? this.subscriptions.findBySubscriptionId(subscriptionId) : undefined
+        const channel = userId ? (this.streamerNames.get(userId) ?? userId) : "unknown"
+
+        if (!observation.signatureValid) {
+            this.handleSignatureMismatch(observation, userId)
+            return
+        }
+
+        if (observation.messageType === "notification") {
+            this.handleNotification(observation, userId, channel)
+            return
+        }
+
+        this.logger.debug(
+            `EventSub webhook type=${observation.messageType ?? "unknown"} subscription=${subscriptionId ?? "unknown"} channel=${channel} signature=valid age_ms=${observation.ageMs ?? "unknown"}`
+        )
+    }
+
+    private handleSignatureMismatch(observation: TwitchWebhookObservation, userId: string | undefined): void {
+        this.logger.warn(
+            `EventSub webhook signature rejected subscription=${observation.subscriptionId ?? "unknown"} type=${observation.messageType ?? "unknown"} channel=${userId ? (this.streamerNames.get(userId) ?? userId) : "unknown"} bytes=${observation.bytes} age_ms=${observation.ageMs ?? "unknown"} secret_fingerprint=${this.secretFingerprintLabel()}`
+        )
+        if (userId && observation.subscriptionId) {
+            this.recoverUnverifiableSubscription(userId, observation.subscriptionId)
+        }
+    }
+
+    private handleNotification(
+        observation: TwitchWebhookObservation,
+        userId: string | undefined,
+        channel: string
+    ): void {
+        const stale = (observation.ageMs ?? 0) > STALE_NOTIFICATION_MS
+        this.logger.info(
+            `EventSub notification subscription=${observation.subscriptionId ?? "unknown"} event=${STREAM_ONLINE_EVENT} channel=${channel} user=${userId ?? "unknown"} age_ms=${observation.ageMs ?? "unknown"} stale=${stale}`
+        )
+        if (userId || !observation.subscriptionId) return
+        this.logger.warn(
+            `EventSub notification for untracked subscription=${observation.subscriptionId}; Twitch retries will keep failing until it is removed`
+        )
+        void this.recoverUntrackedSubscription(observation.subscriptionId).catch((error) =>
+            this.logger.warn(
+                `Untracked EventSub recovery failed subscription=${observation.subscriptionId}: ${errorDetails(error)}`
+            )
+        )
+    }
+
+    private beginRecovery(subscriptionId: string): boolean {
+        const now = Date.now()
+        if (now - (this.recoveryAttempts.get(subscriptionId) ?? 0) < RECOVERY_COOLDOWN_MS) return false
+        this.recoveryAttempts.set(subscriptionId, now)
+        return true
+    }
+
+    private recoverUnverifiableSubscription(userId: string, subscriptionId: string): void {
+        if (this.shuttingDown || !this.subscriptionsLoaded || !this.beginRecovery(subscriptionId)) return
+
+        const subscription = this.subscriptions.getSubscription(userId)
+        const channel = this.streamerNames.get(userId) ?? userId
+        this.logger.warn(
+            `Recreating EventSub subscription for ${channel} (${userId}) after signature mismatch; possible EVENTSUB_SECRET mismatch`
+        )
+        this.subscriptions.remove(userId)
+        this.failedSubscriptions.add(userId)
+        try {
+            subscription?.stop()
+        } catch (error) {
+            this.logger.debug(`Could not remove mismatched subscription ${subscriptionId}: ${errorDetails(error)}`)
+        }
+        this.scheduleRetry()
+    }
+
+    private async recoverUntrackedSubscription(subscriptionId: string): Promise<void> {
+        const client = this.appClient
+        if (!client || this.shuttingDown || !this.subscriptionsLoaded || !this.beginRecovery(subscriptionId)) return
+
+        const channelId = subscriptionId.startsWith(STREAM_ONLINE_SUBSCRIPTION_PREFIX)
+            ? subscriptionId.slice(STREAM_ONLINE_SUBSCRIPTION_PREFIX.length)
+            : ""
+        const followed = channelId ? (await this.twitchConfigRepo.findByChannelId(channelId)).length > 0 : false
+        await client.eventSub.deleteSubscription(subscriptionId)
+        this.logger.info(`Removed untracked EventSub subscription=${subscriptionId} channel=${channelId || "unknown"}`)
+        if (!followed) return
+
+        // Twurple caches subscriptions adopted at startup. Reload that cache, or the retry
+        // would resume the remote subscription we just deleted instead of creating a new one.
+        await this.httpListener?.markAsReady()
+        this.failedSubscriptions.add(channelId)
+        this.logger.warn(`Tracked channel ${channelId} had no local EventSub handler; recreating its subscription`)
+        this.scheduleRetry()
     }
 
     /** Called after the shared HTTP server is listening, so Twitch can verify callbacks. */
@@ -264,16 +401,62 @@ export class TwitchEventSubManager implements OnModuleDestroy {
         const listener = this.httpListener
         if (!listener) return
         try {
+            await this.removeOrphanedSubscriptions()
             await listener.markAsReady()
             if (this.shuttingDown || this.httpListener !== listener) return
             this.httpReady = true
-            this.logger.info(`EventSub webhook ready at https://${this.webhookHost}/eventsub (shared API server)`)
+            this.logger.info(
+                `EventSub webhook ready at https://${this.webhookHost}/${EVENTSUB_PATH} (shared API server)`
+            )
         } catch (error) {
             this.httpReady = false
             this.logger.error(`EventSub webhook startup failed ${errorDetails(error)}`)
             this.scheduleRetry()
         } finally {
             this.resolveWebhookReady?.()
+        }
+    }
+
+    private async removeOrphanedSubscriptions(): Promise<void> {
+        const client = this.appClient
+        if (!client || this.shuttingDown) return
+        const callbackPrefix = `https://${this.webhookHost}/${EVENTSUB_PATH}/event/`
+        try {
+            const [remote, follows] = await Promise.all([
+                client.eventSub.getSubscriptionsPaginated().getAll(),
+                this.twitchConfigRepo.findAll()
+            ])
+            const followed = new Set(follows.map((follow) => follow.channelId))
+            let scanned = 0
+            let kept = 0
+            let removed = 0
+            for (const subscription of remote) {
+                if (subscription.type !== STREAM_ONLINE_EVENT || subscription._transport.method !== "webhook") continue
+                if (!subscription._transport.callback.startsWith(callbackPrefix)) continue
+                scanned++
+                const broadcaster = subscription.condition.broadcaster_user_id
+                const channelId = typeof broadcaster === "string" ? broadcaster : ""
+                if (channelId && followed.has(channelId)) {
+                    kept++
+                    continue
+                }
+                try {
+                    await client.eventSub.deleteSubscription(subscription.id)
+                    removed++
+                    this.logger.info(
+                        `Removed orphaned EventSub subscription=${subscription.id} channel=${channelId || "unknown"} status=${subscription.status}`
+                    )
+                } catch (error) {
+                    this.logger.warn(
+                        `Could not remove orphaned EventSub subscription=${subscription.id} channel=${channelId || "unknown"}: ${errorDetails(error)}`
+                    )
+                }
+            }
+            this.logger.info(
+                `EventSub remote subscriptions scanned=${scanned} kept=${kept} removed=${removed} followed_channels=${followed.size}`
+            )
+        } catch (error) {
+            this.logger.warn(`Could not reconcile EventSub subscriptions: ${errorDetails(error)}`)
         }
     }
 
@@ -290,7 +473,10 @@ export class TwitchEventSubManager implements OnModuleDestroy {
         if (this.wsListener) return
         try {
             const {client} = await this.twitchAuth.ensureInitialized()
-            this.wsListener = new EventSubWsListener({apiClient: client})
+            this.wsListener = new EventSubWsListener({
+                apiClient: client,
+                logger: twurpleLoggerOptions(this.logger)
+            })
             const listener = this.wsListener
             const disconnectedAt = new Map<string, number>()
             this.watchSubscriptionResults(listener)
@@ -350,6 +536,7 @@ export class TwitchEventSubManager implements OnModuleDestroy {
                 }
             })
             this.subscriptions.register(userId, sub, refCount)
+            this.streamerNames.set(userId, displayName)
             this.failedSubscriptions.delete(userId)
             this.logger.info(`Registered webhook stream listener for ${displayName} (${userId})`)
         } catch (err) {
@@ -530,6 +717,8 @@ export class TwitchEventSubManager implements OnModuleDestroy {
             this.redemptionSubscriptions.clear()
             this.subscriptions.clear()
             this.failedSubscriptions.clear()
+            this.streamerNames.clear()
+            this.recoveryAttempts.clear()
             this.subscriptionsLoaded = false
             this.started = false
             this.retryDelay = 30_000

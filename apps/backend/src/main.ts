@@ -23,13 +23,19 @@ async function bootstrap() {
     const fatal = (error: unknown) => {
         if (closing) return
         closing = true
-        bootstrapLogger.error(`Fatal process error ${errorDetails(error)}`, "Bootstrap")
+        bootstrapLogger.error(
+            `Fatal process error uptime_s=${process.uptime().toFixed(1)} rss_mb=${Math.round(process.memoryUsage().rss / 1024 / 1024)} ${errorDetails(error)}`,
+            "Bootstrap"
+        )
         const timeout = setTimeout(() => process.exit(1), 5000)
         timeout.unref()
         void app.close().finally(() => process.exit(1))
     }
     process.on("uncaughtException", fatal)
     process.on("unhandledRejection", fatal)
+    for (const signal of ["SIGTERM", "SIGINT"] as const) {
+        process.once(signal, () => bootstrapLogger.info(`Received ${signal}; shutting down gracefully`, "Bootstrap"))
+    }
 
     await app.listen(PORT.BACKEND)
     await app.get(TwitchEventSubManager).markWebhookReady()

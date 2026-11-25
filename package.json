@@ -30,7 +30,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "storage:up": "docker compose -f compose.yml -f compose.dev.yml up -d --build garage --wait && bun run secrets:sync",
-    "dev:prepare": "bun run storage:up && bun run db:prepare",
+    "dev:prepare": "bun i && bun run storage:up && bun run db:prepare",
     "secrets:sync": "bun scripts/sync-secrets.ts"
   },
   "devDependencies": {

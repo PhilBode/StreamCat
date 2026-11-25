@@ -5,7 +5,11 @@ import {NestFactory} from "@nestjs/core"
 import {EventSubMiddleware} from "@twurple/eventsub-http"
 import {createHmac} from "node:crypto"
 import {request} from "node:http"
-import {MAX_WEBHOOK_BYTES, protectTwitchWebhook} from "../src/integrations/twitch/eventsub/webhook-security"
+import {
+    createTwitchWebhookGuard,
+    MAX_WEBHOOK_BYTES,
+    type TwitchWebhookObservation
+} from "../src/integrations/twitch/eventsub/webhook-security"
 
 @Module({})
 class TestModule {}
@@ -14,6 +18,7 @@ const secret = "audit-only-not-a-production-secret"
 let app: INestApplication
 let origin: string
 let verifications = 0
+const observations: TwitchWebhookObservation[] = []
 
 beforeAll(async () => {
     app = await NestFactory.create(TestModule, {logger: false})
@@ -28,7 +33,13 @@ beforeAll(async () => {
     const subscriptions = (listener as unknown as {_subscriptions: Map<string, unknown>})._subscriptions
     subscriptions.set("audit", {id: "audit", _verify: () => verifications++})
     const router = app.getHttpAdapter().getInstance()
-    router.use("/eventsub", protectTwitchWebhook)
+    router.use(
+        "/eventsub",
+        createTwitchWebhookGuard({
+            secret,
+            onObserved: (observation) => observations.push(observation)
+        })
+    )
     listener.apply(router)
     await app.listen(0, "127.0.0.1")
     origin = await app.getUrl()
@@ -78,4 +89,21 @@ test("rejects unsigned and oversized webhooks while preserving Twurple's raw-bod
     expect(valid.status).toBe(200)
     expect(await valid.text()).toBe("verified")
     expect(verifications).toBe(1)
+})
+
+test("observes subscription id and signature validity without disturbing Twurple", async () => {
+    const url = `${origin}/eventsub/event/audit`
+    const body = JSON.stringify({challenge: "observed"})
+    observations.length = 0
+
+    const invalid = await fetch(url, {method: "POST", headers: headers(body), body: `${body} `})
+    expect(invalid.status).toBe(410)
+    expect(observations.at(-1)?.subscriptionId).toBe("audit")
+    expect(observations.at(-1)?.messageType).toBe("webhook_callback_verification")
+    expect(observations.at(-1)?.signatureValid).toBe(false)
+
+    const valid = await fetch(url, {method: "POST", headers: headers(body), body})
+    expect(valid.status).toBe(200)
+    expect(observations.at(-1)?.signatureValid).toBe(true)
+    expect(observations.at(-1)?.bytes).toBe(Buffer.byteLength(body))
 })
